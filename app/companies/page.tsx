@@ -1,16 +1,18 @@
+"use client";
+
 import Link from "next/link";
+import { FormEvent, useState } from "react";
+import { SiteHeader } from "../components/site-header";
+import { SiteFooter } from "../components/site-footer";
 
 export default function Companies() {
-  return (
-    <main className="page">
-      <nav className="nav container"><span className="brand">AVENLO</span><Link className="btn" href="/">Back</Link></nav>
-      <section className="hero container" style={{ maxWidth: 900 }}>
-        <span className="eyebrow">FOR COMPANIES</span>
-        <h1>Bring us the requirement. We bring the human-led search.</h1>
-        <p>Avenlo helps companies turn hiring requirements into structured signals and a focused candidate shortlist. Matching is explainable and final decisions remain human.</p>
-        <div className="actions"><Link className="btn primary" href="/join">Create an account</Link><Link className="btn" href="/login">Company sign in</Link></div>
-      </section>
-      <section className="section"><div className="container grid"><article className="card"><span className="eyebrow">01</span><h2>Structured requirements</h2><p className="muted">Capture role, skill, experience, location, work mode and industry signals in a consistent format.</p></article><article className="card"><span className="eyebrow">02</span><h2>Explainable matches</h2><p className="muted">See the signals behind a recommendation instead of relying on an opaque ranking.</p></article><article className="card"><span className="eyebrow">03</span><h2>Human review</h2><p className="muted">Avenlo staff review and manage the final candidate relationship and hiring workflow.</p></article></div></section>
-    </main>
-  );
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [error, setError] = useState("");
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setStatus("sending"); setError("");
+    const form = new FormData(event.currentTarget);
+    try { const response = await fetch("/api/company-inquiries", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.fromEntries(form.entries())) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || "Unable to send your request."); setStatus("sent"); event.currentTarget.reset(); }
+    catch (err) { setStatus("error"); setError(err instanceof Error ? err.message : "Unable to send your request."); }
+  }
+  return <main><SiteHeader /><section className="company-hero"><div className="container company-hero__grid"><div><span className="eyebrow">FOR COMPANIES</span><h1>Tell us what great talent looks like for your team.</h1><p>Skip the generic signup flow. Give Avenlo the requirement, the context and the problem you are trying to solve. We'll use that to start a focused conversation.</p><div className="company-hero__points"><span>✓ Structured requirements</span><span>✓ Human-led search</span><span>✓ Explainable matching</span></div></div><div className="inquiry-card"><span className="eyebrow">START A CONVERSATION</span><h2>Tell us about the role.</h2><p>There is no obligation and no automated candidate ranking. This is a direct company inquiry.</p>{status === "sent" ? <div className="success-state" role="status"><strong>Thanks — your request is in.</strong><p>The Avenlo team can now review the requirement and follow up with you.</p><Link className="btn btn--primary" href="/">Back to Avenlo</Link></div> : <form className="form" onSubmit={submit}><div className="form-grid"><label>Company name<input name="companyName" required autoComplete="organization" /></label><label>Your name<input name="contactName" required autoComplete="name" /></label></div><label>Work email<input name="email" required type="email" autoComplete="email" /></label><label>Your role <span className="label-optional">optional</span><input name="role" autoComplete="organization-title" /></label><label>What are you hiring for?<textarea name="hiringNeed" required minLength={20} rows={5} placeholder="Role, seniority, must-have skills, location/work mode, timing, and anything else that matters…" /></label>{status === "error" ? <p className="error" role="alert">{error}</p> : null}<button className="btn btn--primary" type="submit" disabled={status === "sending"}>{status === "sending" ? "Sending request…" : "Request a conversation →"}</button><p className="form-note">Your information is used to respond to this company inquiry.</p></form>}</div></div></section><section className="section section--light"><div className="container"><div className="section-heading section-heading--stack"><span className="eyebrow">WHY COMPANIES USE AVENLO</span><h2>Less noise. More context. Better conversations.</h2></div><div className="principles-grid"><article className="principle-card"><span>01</span><h3>Requirement intelligence</h3><p>Capture the real hiring need instead of reducing every search to keywords.</p></article><article className="principle-card"><span>02</span><h3>Relevant signals</h3><p>Candidate intelligence is structured around experience, skills and context.</p></article><article className="principle-card"><span>03</span><h3>Human review</h3><p>Avenlo people remain accountable for recommendations, relationships and decisions.</p></article></div></div></section><section className="section"><div className="container company-principle"><span className="eyebrow">ONE IMPORTANT DIFFERENCE</span><h2>Avenlo is not an automated hiring gatekeeper.</h2><p>We use technology to organize evidence and make matching more explainable. The people involved in the process still decide who should move forward.</p></div></section><SiteFooter /></main>;
 }

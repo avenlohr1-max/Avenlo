@@ -1,0 +1,5 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { createClient } from "@/lib/supabase/server";
+const inquirySchema=z.object({companyName:z.string().trim().min(2).max(160),contactName:z.string().trim().min(2).max(120),email:z.string().trim().email().max(254),role:z.string().trim().max(120).optional().default(""),hiringNeed:z.string().trim().min(20).max(4000)});
+export async function POST(request:Request){try{const body=inquirySchema.parse(await request.json());const supabase=await createClient();const {error}=await supabase.from("company_inquiries").insert({company_name:body.companyName,contact_name:body.contactName,email:body.email,role:body.role||null,hiring_need:body.hiringNeed});if(error){console.error("company inquiry insert failed",error);return NextResponse.json({error:"We couldn't send your request right now."},{status:500});}return NextResponse.json({ok:true});}catch(error){if(error instanceof z.ZodError)return NextResponse.json({error:"Please check the form fields and try again."},{status:400});return NextResponse.json({error:"We couldn't send your request right now."},{status:500});}}

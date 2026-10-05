@@ -15,4 +15,4 @@ drop policy if exists "anyone can submit company inquiries" on public.company_in
 create policy "anyone can submit company inquiries" on public.company_inquiries for insert to anon, authenticated with check (true);
 
 drop policy if exists "staff can read company inquiries" on public.company_inquiries;
-create policy "staff can read company inquiries" on public.company_inquiries for select to authenticated using (public.current_user_role() in ('staff', 'admin', 'founder'));
+create policy "staff can read company inquiries" on public.company_inquiries for select to authenticated using (public.current_user_role() in ('staff', 'founder'));

@@ -1,4 +1,36 @@
 import Link from "next/link";
 import { BrandLogo } from "./brand-logo";
-const links = [["Why Avenlo","#why-avenlo"],["How it works","#how-it-works"],["For companies","/companies"],["For candidates","/join"]] as const;
-export function SiteHeader(){return <header className="site-header"><div className="container site-header__inner"><BrandLogo compact/><nav className="desktop-nav" aria-label="Primary navigation">{links.map(([label,href])=><Link key={href} href={href}>{label}</Link>)}</nav><div className="header-actions"><Link className="header-login" href="/login">Sign in</Link><Link className="btn btn--small btn--primary" href="/companies">Talk to Avenlo</Link></div><details className="mobile-nav"><summary aria-label="Open navigation"><span/><span/><span/></summary><nav aria-label="Mobile navigation">{links.map(([label,href])=><Link key={href} href={href}>{label}</Link>)}<Link href="/login">Sign in</Link><Link className="btn btn--primary" href="/companies">Talk to Avenlo</Link></nav></details></div></header>}
+
+const links = [
+  ["Why Avenlo", "/#why-avenlo"],
+  ["How it works", "/#how-it-works"],
+  ["For companies", "/companies"],
+  ["For candidates", "/join"],
+] as const;
+
+export function SiteHeader() {
+  return (
+    <header className="site-header">
+      <div className="container site-header__inner">
+        <BrandLogo compact />
+        <nav className="desktop-nav" aria-label="Primary navigation">
+          {links.map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}
+        </nav>
+        <div className="header-actions">
+          <Link className="header-login" href="/login">Sign in</Link>
+          <Link className="btn btn--small btn--primary" href="/companies">Talk to Avenlo</Link>
+        </div>
+        <details className="mobile-nav">
+          <summary aria-label="Open navigation"><span /><span /><span /></summary>
+          <nav aria-label="Mobile navigation">
+            {links.map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}
+            <div className="mobile-nav__divider" />
+            <Link href="/login">Sign in</Link>
+            <Link href="/admin/login">Founder / admin</Link>
+            <Link className="btn btn--primary" href="/companies">Talk to Avenlo</Link>
+          </nav>
+        </details>
+      </div>
+    </header>
+  );
+}

@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SiteHeader } from "../../components/site-header";
 
-export default function VerifyCandidateEmail() {
-  const params = useMemo(() => new URLSearchParams(window.location.search), []);
-  const initialEmail = params.get("email") ?? "";
-  const [email] = useState(initialEmail);
+function VerifyCandidateEmailContent() {
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email") ?? "";
   const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -27,7 +27,11 @@ export default function VerifyCandidateEmail() {
       if (code.length !== 6) throw new Error("Enter the 6-digit verification code from your email.");
 
       const supabase = createClient();
-      const { error: verifyError } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token: code,
+        type: "email",
+      });
       if (verifyError) throw verifyError;
 
       window.location.assign("/dashboard/profile?onboarding=1");
@@ -63,7 +67,9 @@ export default function VerifyCandidateEmail() {
           <div className="inquiry-card">
             <span className="eyebrow">STEP 2 OF 2</span>
             <h1>Verify your email.</h1>
-            <p>We sent a 6-digit verification code to <strong>{email || "your email address"}</strong>. Enter it below to continue to your professional profile.</p>
+            <p>
+              We sent a 6-digit verification code to <strong>{email || "your email address"}</strong>. Enter it below to continue to your professional profile.
+            </p>
 
             <form className="form" onSubmit={verify}>
               <label>
@@ -100,5 +106,13 @@ export default function VerifyCandidateEmail() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function VerifyCandidateEmail() {
+  return (
+    <Suspense fallback={<main><SiteHeader /><section className="company-hero"><div className="container"><p className="muted">Loading verification…</p></div></section></main>}>
+      <VerifyCandidateEmailContent />
+    </Suspense>
   );
 }

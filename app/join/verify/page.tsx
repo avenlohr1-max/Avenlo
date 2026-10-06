@@ -49,9 +49,12 @@ function VerifyCandidateEmailContent() {
     try {
       if (!email) throw new Error("Your verification email is missing. Please start again.");
       const supabase = createClient();
-      const { error: resendError } = await supabase.auth.resend({ type: "signup", email });
+      const { error: resendError } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: true },
+      });
       if (resendError) throw resendError;
-      setMessage("A new verification code has been sent. Please check your inbox.");
+      setMessage("A new 6-digit verification code has been sent. Please check your inbox.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to resend the verification code.");
     } finally {

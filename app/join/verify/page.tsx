@@ -30,7 +30,10 @@ function VerifyCandidateEmailContent() {
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
         token: code,
-        type: "email",
+        // Candidate signup confirmation codes are the `signup` OTP type.
+        // Using `email` here is for other email-based auth flows and can reject
+        // a valid signup confirmation token.
+        type: "signup",
       });
       if (verifyError) throw verifyError;
 

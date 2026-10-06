@@ -22,7 +22,13 @@ export default async function Dashboard() {
 
   const skillCount = skills?.length ?? 0;
   const hasResume = Boolean(candidate?.resume_path);
-  const hasProfileSignals = Boolean(profile?.full_name && candidate?.experience_years != null && candidate?.seniority && candidate?.industry && skillCount > 0);
+  const hasProfileSignals = Boolean(
+    profile?.full_name &&
+      candidate?.experience_years != null &&
+      candidate?.seniority &&
+      candidate?.industry &&
+      skillCount > 0,
+  );
 
   return (
     <main className={styles.dashboard}>
@@ -35,7 +41,6 @@ export default async function Dashboard() {
           <nav className={styles.nav} aria-label="Candidate navigation">
             <Link href="/dashboard">Overview</Link>
             <Link href="/dashboard/profile">My profile</Link>
-            <Link href="/dashboard/applications">Applications</Link>
             <SignOutButton />
           </nav>
         </div>
@@ -75,7 +80,7 @@ export default async function Dashboard() {
             <div>
               <span className={styles.toolLabel}>RESUME CHECKER</span>
               <h3>{hasResume ? "Your resume is on file" : "Strengthen your resume"}</h3>
-              <p>{hasResume ? "Your resume is securely stored. The next step is to review its quality and alignment with the direction you want to pursue." : "Upload your latest resume so Avenlo can use it as part of your career review."}</p>
+              <p>{hasResume ? "Your resume is securely stored. Review it with Avenlo to improve clarity, evidence and role alignment." : "Upload your latest resume so Avenlo can use it as part of your career review."}</p>
             </div>
             <div className={styles.toolButton}><Link className="btn btn--primary btn--small" href="/dashboard/profile">{hasResume ? "Review resume" : "Upload resume"}</Link></div>
             <span className={styles.toolStatus}>{hasResume ? "READY" : "ACTION NEEDED"}</span>
@@ -111,8 +116,8 @@ export default async function Dashboard() {
             <div className={styles.empty}>
               <div className={styles.emptyOrb} aria-hidden="true">A</div>
               <div>
-                <h3>No recommendations yet</h3>
-                <p>Once your profile has enough signal, the Avenlo team can surface opportunities that fit your experience and preferences. We will bring the opportunities to you — there is no job-board browsing step.</p>
+                <h3>We bring the opportunities to you</h3>
+                <p>Once your profile has enough signal, the Avenlo team can surface opportunities that fit your experience and preferences. There is no job-board browsing step.</p>
                 <Link className="btn btn--primary btn--small" href="/dashboard/profile">Complete my profile</Link>
               </div>
             </div>
@@ -133,10 +138,13 @@ export default async function Dashboard() {
 
         <div className={styles.bottomGrid}>
           <article className={`${styles.panel} ${styles.bottomPanel}`}>
-            <span className={styles.eyebrow}>APPLICATIONS</span>
-            <h2>Track your progress</h2>
-            <p>See applications and updates in one place when Avenlo moves an opportunity forward.</p>
-            <Link className="btn btn--small" href="/dashboard/applications">View applications</Link>
+            <span className={styles.eyebrow}>WHAT HAPPENS NEXT</span>
+            <h2>Avenlo works behind the scenes.</h2>
+            <div className={styles.stepList}>
+              <div className={styles.step}><span>01</span><div><strong>Understand</strong><p>We review your profile, resume, skills and career direction.</p></div></div>
+              <div className={styles.step}><span>02</span><div><strong>Recommend</strong><p>We identify relevant opportunities and learning actions for you.</p></div></div>
+              <div className={styles.step}><span>03</span><div><strong>Connect</strong><p>When there is a strong fit, Avenlo guides the next step with you.</p></div></div>
+            </div>
           </article>
           <article className={`${styles.panel} ${styles.bottomPanel} ${styles.dark}`}>
             <span className={styles.eyebrow}>THE AVENLO PRINCIPLE</span>

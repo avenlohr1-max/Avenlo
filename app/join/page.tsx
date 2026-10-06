@@ -5,6 +5,8 @@ import { FormEvent, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { SiteHeader } from "../components/site-header";
 
+const productionSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+
 export default function Join() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -23,14 +25,14 @@ export default function Join() {
       const normalizedEmail = email.trim().toLowerCase();
       if (!fullName.trim()) throw new Error("Please enter your full name.");
       if (password.length < 8) throw new Error("Password must be at least 8 characters.");
+      if (!productionSiteUrl) throw new Error("Avenlo authentication is temporarily unavailable. Please try again later.");
 
       const supabase = createClient();
-      const redirectOrigin = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
         options: {
-          emailRedirectTo: `${redirectOrigin}/auth/callback?redirect=/dashboard/profile`,
+          emailRedirectTo: `${productionSiteUrl}/auth/callback?redirect=/dashboard/profile`,
           data: { full_name: fullName.trim(), account_type: "candidate" },
         },
       });

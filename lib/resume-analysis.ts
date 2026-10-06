@@ -70,26 +70,14 @@ function findSummary(text: string) {
 
 function extractSkills(text: string, candidateSkills: string[]) {
   const found = new Set<string>();
-  const lower = text.toLowerCase();
-  for (const skill of candidateSkills) {
-    if (skill && lower.includes(skill.toLowerCase())) found.add(skill);
-  }
-  for (const [label, aliases] of SKILL_ALIASES) {
-    if (aliases.some((alias) => hasPhrase(text, alias))) found.add(label);
-  }
+  for (const skill of candidateSkills) if (skill && text.toLowerCase().includes(skill.toLowerCase())) found.add(skill);
+  for (const [label, aliases] of SKILL_ALIASES) if (aliases.some((alias) => hasPhrase(text, alias))) found.add(label);
   return [...found].sort((a, b) => a.localeCompare(b));
 }
 
-export function analyzeResume(args: {
-  text: string;
-  fileName: string;
-  fileType: "pdf" | "docx" | "doc";
-  pageCount?: number | null;
-  candidateSkills?: string[];
-}): ResumeAnalysis {
+export function analyzeResume(args: { text: string; fileName: string; fileType: "pdf" | "docx" | "doc"; pageCount?: number | null; candidateSkills?: string[] }): ResumeAnalysis {
   const text = cleanText(args.text);
   const lines = text.split("\n").map((line) => line.trim()).filter(Boolean);
-  const lower = text.toLowerCase();
   const wordCount = text ? text.split(/\s+/).filter(Boolean).length : 0;
   const bullets = lines.filter((line) => /^[-•▪◦*]\s+/.test(line) || /^\d+[.)]\s+/.test(line));
   const quantifiedBullets = bullets.filter((line) => QUANTITY.test(line)).length;
@@ -97,10 +85,7 @@ export function analyzeResume(args: {
   const sections = SECTION_ALIASES.map(([key, label, aliases]) => ({ key, label, present: aliases.some((alias) => hasPhrase(text, alias)) }));
   const candidateSkills = args.candidateSkills ?? [];
   const detectedSkills = extractSkills(text, candidateSkills);
-  const contact = {
-    email: /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(text),
-    phone: /(?:\+?\d[\d ()-]{7,}\d)/.test(text),
-  };
+  const contact = { email: /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(text), phone: /(?:\+?\d[\d ()-]{7,}\d)/.test(text) };
 
   let score = 0;
   score += Math.min(wordCount / 450, 1) * 12;
@@ -120,7 +105,6 @@ export function analyzeResume(args: {
   if (detectedSkills.length >= 5) strengths.push(`${detectedSkills.length} relevant skills were detected from the document.`);
   if (quantifiedBullets >= 2) strengths.push("Several achievements include measurable evidence.");
   if (strengths.length === 0) strengths.push("The document is readable enough to begin structured analysis.");
-
   if (!contact.email) improvements.push("Add a professional email address near the top.");
   if (!contact.phone) improvements.push("Add a reachable phone number if appropriate for your applications.");
   if (!sections.find((section) => section.key === "experience")?.present) improvements.push("Add a clearly labelled experience section with recent roles and outcomes.");
@@ -129,26 +113,7 @@ export function analyzeResume(args: {
   if (wordCount < 180) improvements.push("The resume looks brief; add enough context to show scope and impact without adding filler.");
   if (detectedSkills.length < 4) improvements.push("Make your most relevant skills explicit and use the same terminology as your target roles.");
 
-  return {
-    version: 1,
-    analyzedAt: new Date().toISOString(),
-    fileName: args.fileName,
-    fileType: args.fileType,
-    wordCount,
-    pageCount: args.pageCount ?? null,
-    score: finalScore,
-    contact,
-    sections,
-    candidateSkills,
-    detectedSkills,
-    quantifiedBullets,
-    actionBullets,
-    bulletCount: bullets.length,
-    summary: findSummary(text),
-    strengths: strengths.slice(0, 4),
-    improvements: improvements.slice(0, 6),
-    parserNote: args.fileType === "doc" ? "Legacy .doc files are stored but their text is not parsed yet. Save as .docx or PDF for full analysis." : undefined,
-  };
+  return { version: 1, analyzedAt: new Date().toISOString(), fileName: args.fileName, fileType: args.fileType, wordCount, pageCount: args.pageCount ?? null, score: finalScore, contact, sections, candidateSkills, detectedSkills, quantifiedBullets, actionBullets, bulletCount: bullets.length, summary: findSummary(text), strengths: strengths.slice(0, 4), improvements: improvements.slice(0, 6), parserNote: args.fileType === "doc" ? "Legacy .doc files are stored but their text is not parsed yet. Save as .docx or PDF for full analysis." : undefined };
 }
 
 export async function extractResumeText(file: File, fileType: "pdf" | "docx" | "doc") {
@@ -161,12 +126,7 @@ export async function extractResumeText(file: File, fileType: "pdf" | "docx" | "
   }
 
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const document = await pdfjs.getDocument({
-    data: new Uint8Array(buffer),
-    disableWorker: true,
-    isEvalSupported: false,
-    useSystemFonts: true,
-  }).promise;
+  const document = await pdfjs.getDocument({ data: new Uint8Array(buffer), isEvalSupported: false, useSystemFonts: true }).promise;
   const pages: string[] = [];
   for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
     const page = await document.getPage(pageNumber);

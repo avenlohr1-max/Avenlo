@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import styles from "./profile.module.css";
 
 type Profile = {
   full_name: string;
@@ -31,6 +32,17 @@ type Education = {
   currently_studying: boolean;
 };
 
+type WorkExperience = {
+  id: string;
+  company: string;
+  title: string;
+  location: string;
+  start_year: number | null;
+  end_year: number | null;
+  currently_working: boolean;
+  description: string;
+};
+
 const emptyEducation = (): Education => ({
   institution: "",
   degree: "",
@@ -40,16 +52,30 @@ const emptyEducation = (): Education => ({
   currently_studying: false,
 });
 
+const emptyWork = (): WorkExperience => ({
+  id: crypto.randomUUID(),
+  company: "",
+  title: "",
+  location: "",
+  start_year: null,
+  end_year: null,
+  currently_working: false,
+  description: "",
+});
+
 export default function CandidateProfilePage() {
   const [profile, setProfile] = useState<Profile>({ full_name: "", phone: "", headline: "", location: "", bio: "" });
   const [candidate, setCandidate] = useState<Candidate>({ experience_years: null, seniority: "", work_mode: "", industry: "", resume_path: null, preferences: {} });
   const [education, setEducation] = useState<Education[]>([]);
+  const [workHistory, setWorkHistory] = useState<WorkExperience[]>([]);
   const [skills, setSkills] = useState("");
   const [resume, setResume] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const years = useMemo(() => Array.from({ length: 86 }, (_, index) => 1950 + index).reverse(), []);
 
   useEffect(() => {
     async function load() {
@@ -66,7 +92,21 @@ export default function CandidateProfilePage() {
 
       if (profileError) setError("Unable to load your profile.");
       if (profileData) setProfile((current) => ({ ...current, ...profileData }));
-      if (candidateData) setCandidate(candidateData as Candidate);
+      if (candidateData) {
+        const normalized = candidateData as Candidate;
+        setCandidate(normalized);
+        const savedWork = Array.isArray(normalized.preferences?.work_history) ? normalized.preferences.work_history : [];
+        setWorkHistory(savedWork.map((item: Partial<WorkExperience>, index: number) => ({
+          id: item.id || `work-${index}`,
+          company: item.company || "",
+          title: item.title || "",
+          location: item.location || "",
+          start_year: item.start_year ?? null,
+          end_year: item.end_year ?? null,
+          currently_working: Boolean(item.currently_working),
+          description: item.description || "",
+        })));
+      }
       setSkills((skillData ?? []).map((item) => item.skill).join(", "));
       setEducation((educationData ?? []).map((item) => ({
         id: item.id,
@@ -86,13 +126,24 @@ export default function CandidateProfilePage() {
     setEducation((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, ...patch } : row));
   }
 
+  function updateWork(index: number, patch: Partial<WorkExperience>) {
+    setWorkHistory((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, ...patch } : row));
+  }
+
   function validateEducation(rows: Education[]) {
     for (const row of rows) {
       if (!row.institution.trim()) throw new Error("Each education entry needs an institution.");
       if (row.start_year != null && (row.start_year < 1900 || row.start_year > 2100)) throw new Error("Education start year must be between 1900 and 2100.");
       if (row.end_year != null && (row.end_year < 1900 || row.end_year > 2100)) throw new Error("Education end year must be between 1900 and 2100.");
-      if (row.start_year != null && row.end_year != null && row.end_year < row.start_year) throw new Error("Education end year cannot be before the start year.");
-      if (row.currently_studying) row.end_year = null;
+      if (!row.currently_studying && row.start_year != null && row.end_year != null && row.end_year < row.start_year) throw new Error("Education end year cannot be before the start year.");
+    }
+  }
+
+  function validateWork(rows: WorkExperience[]) {
+    for (const row of rows) {
+      if (!row.company.trim()) throw new Error("Each work entry needs a company.");
+      if (!row.title.trim()) throw new Error("Each work entry needs a job title.");
+      if (row.start_year != null && row.end_year != null && !row.currently_working && row.end_year < row.start_year) throw new Error("A job end year cannot be before its start year.");
     }
   }
 
@@ -113,6 +164,7 @@ export default function CandidateProfilePage() {
 
       const educationRows = education.map((row) => ({ ...row }));
       validateEducation(educationRows);
+      validateWork(workHistory);
 
       let resumePath = candidate.resume_path;
       if (resume) {
@@ -136,6 +188,7 @@ export default function CandidateProfilePage() {
       }).eq("id", user.id);
       if (profileError) throw new Error("Unable to save profile details.");
 
+      const nextPreferences = { ...candidate.preferences, work_history: workHistory.map(({ id, ...row }) => ({ id, ...row })) };
       const { error: candidateError } = await supabase.from("candidate_profiles").upsert({
         user_id: user.id,
         experience_years: candidate.experience_years,
@@ -143,7 +196,7 @@ export default function CandidateProfilePage() {
         work_mode: candidate.work_mode.trim() || null,
         industry: candidate.industry.trim() || null,
         resume_path: resumePath,
-        preferences: candidate.preferences,
+        preferences: nextPreferences,
       });
       if (candidateError) throw new Error("Unable to save professional details.");
 
@@ -189,7 +242,7 @@ export default function CandidateProfilePage() {
         setEducation([]);
       }
 
-      setCandidate((current) => ({ ...current, resume_path: resumePath }));
+      setCandidate((current) => ({ ...current, resume_path: resumePath, preferences: nextPreferences }));
       setResume(null);
       setMessage("Profile saved successfully.");
     } catch (err) {
@@ -199,55 +252,92 @@ export default function CandidateProfilePage() {
     }
   }
 
-  if (loading) return <main className="page"><div className="container hero"><p className="muted">Loading your profile…</p></div></main>;
+  if (loading) return <main className={styles.page}><div className="container" style={{ padding: "80px 0" }}><p className={styles.muted}>Loading your profile…</p></div></main>;
 
-  return <main className="page">
-    <nav className="nav container"><span className="brand">AVENLO</span><div className="actions"><Link className="btn" href="/dashboard">Dashboard</Link><Link className="btn" href="/dashboard/applications">Applications</Link></div></nav>
-    <section className="hero container" style={{ maxWidth: 900 }}>
-      <span className="eyebrow">CANDIDATE PROFILE</span>
-      <h1>Your professional profile.</h1>
-      <p>Give the Avenlo team enough structured information to understand your experience and surface relevant opportunities.</p>
-      <form className="card form" onSubmit={save}>
-        <label>Full name<input required value={profile.full_name} onChange={(e) => setProfile({ ...profile, full_name: e.target.value })} /></label>
-        <label>Phone<input value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} /></label>
-        <label>Professional headline<input value={profile.headline} onChange={(e) => setProfile({ ...profile, headline: e.target.value })} placeholder="e.g. Product Manager — B2B SaaS" /></label>
-        <label>Location<input value={profile.location} onChange={(e) => setProfile({ ...profile, location: e.target.value })} /></label>
-        <label>Professional summary<input value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} /></label>
-        <label>Years of experience<input type="number" min="0" max="60" step="0.5" value={candidate.experience_years ?? ""} onChange={(e) => setCandidate({ ...candidate, experience_years: e.target.value ? Number(e.target.value) : null })} /></label>
-        <label>Seniority<input value={candidate.seniority} onChange={(e) => setCandidate({ ...candidate, seniority: e.target.value })} placeholder="Junior / Mid / Senior / Lead / Executive" /></label>
-        <label>Preferred work mode<input value={candidate.work_mode} onChange={(e) => setCandidate({ ...candidate, work_mode: e.target.value })} placeholder="Remote / Hybrid / On-site" /></label>
-        <label>Industry<input value={candidate.industry} onChange={(e) => setCandidate({ ...candidate, industry: e.target.value })} /></label>
-        <label>Skills <span className="muted">comma separated</span><input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="React, Product Management, SQL" /></label>
+  return <main className={styles.page}>
+    <nav className={`container ${styles.nav}`}>
+      <Link className={styles.brand} href="/" aria-label="Avenlo home">AVENLO</Link>
+      <div className={styles.navActions}><Link className="btn" href="/dashboard">Dashboard</Link></div>
+    </nav>
 
-        <div className="section">
-          <div className="actions" style={{ justifyContent: "space-between" }}>
-            <div><span className="eyebrow">EDUCATION</span><h2>Education history</h2></div>
-            <button className="btn" type="button" onClick={() => setEducation((rows) => [...rows, emptyEducation()])}>Add education</button>
+    <section className={`container ${styles.hero}`} style={{ maxWidth: 960 }}>
+      <div className={styles.intro}>
+        <span className={styles.eyebrow}>CANDIDATE PROFILE</span>
+        <h1>Your professional profile.</h1>
+        <p>Give Avenlo the context it needs to understand your experience, strengths and direction — so recommendations can be more relevant.</p>
+      </div>
+
+      <form className={styles.form} onSubmit={save}>
+        <section className={styles.section}>
+          <div className={styles.sectionHead}><div><span className={styles.eyebrow}>ABOUT YOU</span><h2>Profile basics</h2></div></div>
+          <div className={styles.fieldGrid}>
+            <label className={styles.field}>Full name<input className={styles.input} required value={profile.full_name} onChange={(e) => setProfile({ ...profile, full_name: e.target.value })} /></label>
+            <label className={styles.field}>Phone<input className={styles.input} value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} /></label>
+            <label className={styles.field}>Professional headline<input className={styles.input} value={profile.headline} onChange={(e) => setProfile({ ...profile, headline: e.target.value })} placeholder="e.g. Product Manager — B2B SaaS" /></label>
+            <label className={styles.field}>Location<input className={styles.input} value={profile.location} onChange={(e) => setProfile({ ...profile, location: e.target.value })} placeholder="Hyderabad, India" /></label>
+            <label className={`${styles.field} ${styles.fieldFull}`}>Professional summary<textarea className={styles.textarea} value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder="Tell us about your professional strengths, focus and direction." /></label>
           </div>
-          {education.map((row, index) => (
-            <div className="card" key={row.id ?? "new-" + index} style={{ marginTop: 16 }}>
-              <div className="actions" style={{ justifyContent: "space-between" }}>
-                <strong>Education {index + 1}</strong>
-                <button className="btn" type="button" onClick={() => setEducation((rows) => rows.filter((_, rowIndex) => rowIndex !== index))}>Remove</button>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHead}><div><span className={styles.eyebrow}>CAREER</span><h2>Career context</h2></div></div>
+          <div className={styles.fieldGrid}>
+            <label className={styles.field}>Years of experience<input className={styles.input} type="number" min="0" max="60" step="0.5" value={candidate.experience_years ?? ""} onChange={(e) => setCandidate({ ...candidate, experience_years: e.target.value ? Number(e.target.value) : null })} /></label>
+            <label className={styles.field}>Seniority<select className={styles.select} value={candidate.seniority} onChange={(e) => setCandidate({ ...candidate, seniority: e.target.value })}><option value="">Select seniority</option><option>Entry level</option><option>Junior</option><option>Mid-level</option><option>Senior</option><option>Lead</option><option>Manager</option><option>Director</option><option>Executive</option></select></label>
+            <label className={styles.field}>Preferred work mode<select className={styles.select} value={candidate.work_mode} onChange={(e) => setCandidate({ ...candidate, work_mode: e.target.value })}><option value="">Select work mode</option><option>Remote</option><option>Hybrid</option><option>On-site</option></select></label>
+            <label className={styles.field}>Industry<input className={styles.input} value={candidate.industry} onChange={(e) => setCandidate({ ...candidate, industry: e.target.value })} placeholder="Technology, Finance, Healthcare…" /></label>
+            <label className={`${styles.field} ${styles.fieldFull}`}>Skills <span className={styles.fieldHint}>comma separated</span><input className={styles.input} value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="React, Product Management, SQL" /></label>
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHead}><div><span className={styles.eyebrow}>WORK HISTORY</span><h2>Professional experience</h2><p className={styles.sectionCopy}>Add your current and past roles. This information helps Avenlo understand your trajectory and experience level.</p></div><button className={styles.addButton} type="button" onClick={() => setWorkHistory((rows) => [...rows, emptyWork()])}>+ Add role</button></div>
+          {workHistory.map((row, index) => (
+            <div className={styles.entry} key={row.id}>
+              <div className={styles.entryHead}><span className={styles.entryTitle}>Role {index + 1}</span><button className={styles.remove} type="button" onClick={() => setWorkHistory((rows) => rows.filter((_, rowIndex) => rowIndex !== index))}>Remove</button></div>
+              <div className={styles.fieldGrid}>
+                <label className={styles.field}>Company<input className={styles.input} required value={row.company} onChange={(e) => updateWork(index, { company: e.target.value })} placeholder="Company name" /></label>
+                <label className={styles.field}>Job title<input className={styles.input} required value={row.title} onChange={(e) => updateWork(index, { title: e.target.value })} placeholder="Software Engineer" /></label>
+                <label className={styles.field}>Location<input className={styles.input} value={row.location} onChange={(e) => updateWork(index, { location: e.target.value })} placeholder="Bengaluru, India" /></label>
+                <label className={styles.field}>Start year<select className={styles.select} value={row.start_year ?? ""} onChange={(e) => updateWork(index, { start_year: e.target.value ? Number(e.target.value) : null })}><option value="">Select year</option>{years.map((year) => <option key={year} value={year}>{year}</option>)}</select></label>
+                <label className={styles.field}>End year<select className={styles.select} disabled={row.currently_working} value={row.end_year ?? ""} onChange={(e) => updateWork(index, { end_year: e.target.value ? Number(e.target.value) : null })}><option value="">Select year</option>{years.map((year) => <option key={year} value={year}>{year}</option>)}</select></label>
+                <label className={styles.checkRow}><input type="checkbox" checked={row.currently_working} onChange={(e) => updateWork(index, { currently_working: e.target.checked, end_year: e.target.checked ? null : row.end_year })} /> I currently work here</label>
+                <label className={`${styles.field} ${styles.fieldFull}`}>What did you do? <span className={styles.fieldHint}>Optional</span><textarea className={styles.textarea} value={row.description} onChange={(e) => updateWork(index, { description: e.target.value })} placeholder="Key responsibilities, products, achievements or impact." /></label>
               </div>
-              <label>Institution<input required value={row.institution} onChange={(e) => updateEducation(index, { institution: e.target.value })} placeholder="University / College" /></label>
-              <label>Degree<input value={row.degree} onChange={(e) => updateEducation(index, { degree: e.target.value })} placeholder="B.Sc. Computer Science" /></label>
-              <label>Field of study<input value={row.field_of_study} onChange={(e) => updateEducation(index, { field_of_study: e.target.value })} /></label>
-              <div className="grid">
-                <label>Start year<input type="number" min="1900" max="2100" value={row.start_year ?? ""} onChange={(e) => updateEducation(index, { start_year: e.target.value ? Number(e.target.value) : null })} /></label>
-                <label>End year<input type="number" min="1900" max="2100" value={row.end_year ?? ""} disabled={row.currently_studying} onChange={(e) => updateEducation(index, { end_year: e.target.value ? Number(e.target.value) : null })} /></label>
-              </div>
-              <label><input type="checkbox" checked={row.currently_studying} onChange={(e) => updateEducation(index, { currently_studying: e.target.checked, end_year: e.target.checked ? null : row.end_year })} /> Currently studying</label>
             </div>
           ))}
-          {!education.length ? <p className="muted">Add your degree, college and field of study so matching can use education as a signal.</p> : null}
-        </div>
+          {!workHistory.length ? <div className={styles.empty}>No work history added yet. Add your current role or previous jobs so Avenlo can understand your experience more accurately.</div> : null}
+        </section>
 
-        <label>CV / Resume<input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(e) => setResume(e.target.files?.[0] ?? null)} /></label>
-        {candidate.resume_path ? <p className="muted">A CV is already stored securely. Upload a new one only if you want to replace it.</p> : null}
-        {error ? <p className="error" role="alert">{error}</p> : null}
-        {message ? <p className="muted" role="status">{message}</p> : null}
-        <button className="btn primary" type="submit" disabled={saving}>{saving ? "Saving…" : "Save profile"}</button>
+        <section className={styles.section}>
+          <div className={styles.sectionHead}><div><span className={styles.eyebrow}>EDUCATION</span><h2>Education history</h2></div><button className={styles.addButton} type="button" onClick={() => setEducation((rows) => [...rows, emptyEducation()])}>+ Add education</button></div>
+          {education.map((row, index) => (
+            <div className={styles.entry} key={row.id ?? `new-${index}`}>
+              <div className={styles.entryHead}><span className={styles.entryTitle}>Education {index + 1}</span><button className={styles.remove} type="button" onClick={() => setEducation((rows) => rows.filter((_, rowIndex) => rowIndex !== index))}>Remove</button></div>
+              <div className={styles.fieldGrid}>
+                <label className={styles.field}>Institution<input className={styles.input} required value={row.institution} onChange={(e) => updateEducation(index, { institution: e.target.value })} placeholder="University / College" /></label>
+                <label className={styles.field}>Degree<input className={styles.input} value={row.degree} onChange={(e) => updateEducation(index, { degree: e.target.value })} placeholder="B.Sc. Computer Science" /></label>
+                <label className={styles.field}>Field of study<input className={styles.input} value={row.field_of_study} onChange={(e) => updateEducation(index, { field_of_study: e.target.value })} /></label>
+                <label className={styles.field}>Start year<select className={styles.select} value={row.start_year ?? ""} onChange={(e) => updateEducation(index, { start_year: e.target.value ? Number(e.target.value) : null })}><option value="">Select year</option>{years.map((year) => <option key={year} value={year}>{year}</option>)}</select></label>
+                <label className={styles.field}>End year<select className={styles.select} disabled={row.currently_studying} value={row.end_year ?? ""} onChange={(e) => updateEducation(index, { end_year: e.target.value ? Number(e.target.value) : null })}><option value="">Select year</option>{years.map((year) => <option key={year} value={year}>{year}</option>)}</select></label>
+                <label className={styles.checkRow}><input type="checkbox" checked={row.currently_studying} onChange={(e) => updateEducation(index, { currently_studying: e.target.checked, end_year: e.target.checked ? null : row.end_year })} /> Currently studying</label>
+              </div>
+            </div>
+          ))}
+          {!education.length ? <div className={styles.empty}>Add your degree, college and field of study so matching can use education as a signal.</div> : null}
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHead}><div><span className={styles.eyebrow}>RESUME</span><h2>CV / Resume</h2></div></div>
+          <div className={styles.resumeBox}>
+            <input className={styles.file} type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(e) => setResume(e.target.files?.[0] ?? null)} />
+            {candidate.resume_path ? <p className={styles.muted}>A CV is already stored securely. Upload a new one only if you want to replace it.</p> : <p className={styles.muted}>Upload a PDF, DOC or DOCX up to 10 MB.</p>}
+          </div>
+        </section>
+
+        {error ? <p className={styles.error} role="alert">{error}</p> : null}
+        {message ? <p className={styles.notice} role="status">{message}</p> : null}
+        <div className={styles.actions}><button className={styles.save} type="submit" disabled={saving}>{saving ? "Saving profile…" : "Save profile"}</button><Link className="btn" href="/dashboard">Back to dashboard</Link></div>
       </form>
     </section>
   </main>;

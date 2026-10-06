@@ -9,6 +9,7 @@ type Profile = { full_name: string; phone: string; headline: string; location: s
 type Candidate = { experience_years: number | null; seniority: string; work_mode: string; industry: string; resume_path: string | null; preferences: Record<string, unknown> };
 type Education = { id?: string; institution: string; degree: string; field_of_study: string; start_year: number | null; end_year: number | null; currently_studying: boolean };
 type Work = { id: string; company: string; title: string; location: string; start_year: number | null; end_year: number | null; currently_working: boolean; description: string };
+type ExtractedProfile = { full_name: string | null; email: string | null; phone: string | null; headline: string | null; location: string | null; bio: string | null; skills: string[]; target_roles: string[]; experience_years: number | null; seniority: string | null; education: Education[]; work_history: Work[] };
 
 const emptyEducation = (): Education => ({ institution: "", degree: "", field_of_study: "", start_year: null, end_year: null, currently_studying: false });
 const emptyWork = (): Work => ({ id: crypto.randomUUID(), company: "", title: "", location: "", start_year: null, end_year: null, currently_working: false, description: "" });
@@ -23,6 +24,7 @@ export default function CandidateProfilePage() {
   const [resume, setResume] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const years = useMemo(() => Array.from({ length: 81 }, (_, index) => new Date().getFullYear() - index), []);
@@ -49,6 +51,14 @@ export default function CandidateProfilePage() {
         const savedRoles = Array.isArray(prefs.target_roles) ? prefs.target_roles : [];
         setTargetRoles(savedRoles.map(String).join(", "));
         setWorkHistory(savedWork.map((item: Partial<Work>, index: number) => ({ id: item.id || `work-${index}`, company: item.company || "", title: item.title || "", location: item.location || "", start_year: item.start_year ?? null, end_year: item.end_year ?? null, currently_working: Boolean(item.currently_working), description: item.description || "" })));
+        const imported = prefs.resume_import as Partial<ExtractedProfile> | undefined;
+        if (imported) {
+          setProfile((current) => ({ ...current, full_name: current.full_name || imported.full_name || "", phone: current.phone || imported.phone || "", headline: current.headline || imported.headline || "", location: current.location || imported.location || "", bio: current.bio || imported.bio || "" }));
+          if (!savedWork.length && Array.isArray(imported.work_history)) setWorkHistory(imported.work_history.map((item, index) => ({ ...emptyWork(), ...item, id: item.id || `imported-${index}` })));
+          if (!savedRoles.length && Array.isArray(imported.target_roles)) setTargetRoles(imported.target_roles.map(String).join(", "));
+          if (!skillData?.length && Array.isArray(imported.skills)) setSkills(imported.skills.join(", "));
+          if (!educationData?.length && Array.isArray(imported.education)) setEducation(imported.education.map((item, index) => ({ ...emptyEducation(), ...item, id: item.id || `imported-education-${index}` })));
+        }
       }
       setSkills((skillData ?? []).map((item) => item.skill).join(", "));
       setEducation((educationData ?? []).map((item) => ({ id: item.id, institution: item.institution ?? "", degree: item.degree ?? "", field_of_study: item.field_of_study ?? "", start_year: item.start_year ?? null, end_year: item.end_year ?? null, currently_studying: Boolean(item.currently_studying) })));
@@ -59,6 +69,31 @@ export default function CandidateProfilePage() {
 
   function updateEducation(index: number, patch: Partial<Education>) { setEducation((rows) => rows.map((row, i) => i === index ? { ...row, ...patch } : row)); }
   function updateWork(index: number, patch: Partial<Work>) { setWorkHistory((rows) => rows.map((row, i) => i === index ? { ...row, ...patch } : row)); }
+
+  async function importResume(file: File | null) {
+    setResume(file); setMessage(null); setError(null);
+    if (!file) return;
+    setImporting(true);
+    try {
+      const form = new FormData(); form.append("file", file);
+      const response = await fetch("/api/candidate/resume", { method: "POST", body: form });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Unable to read your resume.");
+      const imported = payload.extractedProfile as ExtractedProfile | undefined;
+      if (!imported) throw new Error("The resume was uploaded, but no profile data could be extracted.");
+      setProfile((current) => ({ ...current, full_name: current.full_name || imported.full_name || "", phone: current.phone || imported.phone || "", headline: current.headline || imported.headline || "", location: current.location || imported.location || "", bio: current.bio || imported.bio || "" }));
+      if (imported.skills?.length) setSkills((current) => current || imported.skills.join(", "));
+      if (imported.target_roles?.length) setTargetRoles((current) => current || imported.target_roles.join(", "));
+      if (imported.experience_years != null) setCandidate((current) => ({ ...current, experience_years: current.experience_years ?? imported.experience_years, seniority: current.seniority || imported.seniority || "" }));
+      if (imported.work_history?.length) setWorkHistory((current) => current.length ? current : imported.work_history.map((item, index) => ({ ...emptyWork(), ...item, id: item.id || `imported-${index}` })));
+      if (imported.education?.length) setEducation((current) => current.length ? current : imported.education.map((item, index) => ({ ...emptyEducation(), ...item, id: item.id || `imported-education-${index}` })));
+      setCandidate((current) => ({ ...current, resume_path: payload.path, preferences: { ...current.preferences, resume_analysis: payload.analysis, resume_import: imported } }));
+      setResume(null);
+      setMessage("Resume imported. Review the extracted details below and edit or add anything before saving.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to import your resume.");
+    } finally { setImporting(false); }
+  }
 
   function validate() {
     if (!profile.full_name.trim()) throw new Error("Please add your full name.");
@@ -82,28 +117,25 @@ export default function CandidateProfilePage() {
       validate();
       let resumePath = candidate.resume_path;
       if (resume) {
-        const form = new FormData(); form.append("file", resume);
-        const uploadResponse = await fetch("/api/candidate/resume", { method: "POST", body: form });
-        const uploadPayload = await uploadResponse.json().catch(() => ({}));
-        if (!uploadResponse.ok) throw new Error(uploadPayload.error || "Unable to upload CV.");
-        resumePath = uploadPayload.path;
+        await importResume(resume);
+        resumePath = candidate.resume_path;
       }
       const { error: profileError } = await supabase.from("profiles").update({ full_name: profile.full_name.trim(), phone: profile.phone.trim(), headline: profile.headline.trim(), location: profile.location.trim(), bio: profile.bio.trim() }).eq("id", user.id);
       if (profileError) throw new Error("Unable to save profile details.");
       const skillList = [...new Set(skills.split(",").map((item) => item.trim().toLowerCase()).filter(Boolean))];
       const roleList = [...new Set(targetRoles.split(",").map((item) => item.trim()).filter(Boolean))];
       const nextPreferences = { ...candidate.preferences, target_roles: roleList, work_history: workHistory.map(({ id, ...row }) => ({ id, ...row })) };
-      const { error: candidateError } = await supabase.from("candidate_profiles").upsert({ user_id: user.id, experience_years: candidate.experience_years, seniority: candidate.seniority.trim() || null, work_mode: candidate.work_mode.trim() || null, industry: candidate.industry.trim() || null, resume_path: resumePath, preferences: nextPreferences });
+      const { error: candidateError } = await supabase.from("candidate_profiles").upsert({ user_id: user.id, experience_years: candidate.experience_years, seniority: candidate.seniority.trim() || null, work_mode: candidate.work_mode.trim() || null, industry: candidate.industry.trim() || null, resume_path: resumePath, preferences: nextPreferences }, { onConflict: "user_id" });
       if (candidateError) throw new Error("Unable to save professional details.");
       const { error: deleteSkillError } = await supabase.from("candidate_skills").delete().eq("user_id", user.id);
       if (deleteSkillError) throw new Error("Unable to update skills.");
       if (skillList.length) { const { error: skillError } = await supabase.from("candidate_skills").insert(skillList.map((skill) => ({ user_id: user.id, skill }))); if (skillError) throw new Error("Unable to update skills."); }
       const { data: existingEducation } = await supabase.from("candidate_education").select("id").eq("user_id", user.id);
-      const keptIds = new Set(education.filter((row) => row.id).map((row) => row.id as string));
+      const keptIds = new Set(education.filter((row) => row.id && !row.id.startsWith("imported-")).map((row) => row.id as string));
       const idsToDelete = (existingEducation ?? []).map((row) => row.id).filter((id) => !keptIds.has(id));
       if (idsToDelete.length) { const { error } = await supabase.from("candidate_education").delete().in("id", idsToDelete); if (error) throw new Error("Unable to update education."); }
       if (education.length) {
-        const payload = education.map((row) => ({ ...(row.id ? { id: row.id } : {}), user_id: user.id, institution: row.institution.trim(), degree: row.degree.trim() || null, field_of_study: row.field_of_study.trim() || null, start_year: row.start_year, end_year: row.currently_studying ? null : row.end_year, currently_studying: row.currently_studying }));
+        const payload = education.map((row) => ({ ...(row.id && !row.id.startsWith("imported-") ? { id: row.id } : {}), user_id: user.id, institution: row.institution.trim(), degree: row.degree.trim() || null, field_of_study: row.field_of_study.trim() || null, start_year: row.start_year, end_year: row.currently_studying ? null : row.end_year, currently_studying: row.currently_studying }));
         const { data: savedEducation, error } = await supabase.from("candidate_education").upsert(payload).select("id, institution, degree, field_of_study, start_year, end_year, currently_studying");
         if (error) throw new Error("Unable to update education.");
         setEducation((savedEducation ?? []).map((row) => ({ id: row.id, institution: row.institution ?? "", degree: row.degree ?? "", field_of_study: row.field_of_study ?? "", start_year: row.start_year ?? null, end_year: row.end_year ?? null, currently_studying: Boolean(row.currently_studying) })));
@@ -115,9 +147,11 @@ export default function CandidateProfilePage() {
   if (loading) return <main className={styles.page}><div className={styles.loading}>Loading your profile…</div></main>;
   return <main className={styles.page}>
     <nav className={styles.nav}><Link href="/dashboard" className={styles.brand}><span className="brand-lockup brand-lockup--compact"><span className="brand-copy"><span className="brand-wordmark">AVENLO</span></span></span></Link><div className={styles.navActions}><Link className="btn btn--small" href="/dashboard">Dashboard</Link></div></nav>
-    <section className={styles.hero}><div className={styles.heroInner}><div className={styles.eyebrow}>CANDIDATE PROFILE</div><h1>Build the context behind your career.</h1><p>Complete the details Avenlo needs to understand your experience, strengths, education and direction. The more useful the signal, the more useful the recommendation.</p><div className={styles.heroMeta}><span>Private profile</span><span>Used for matching</span><span>No public job board</span></div></div></section>
+    <section className={styles.hero}><div className={styles.heroInner}><div className={styles.eyebrow}>CANDIDATE PROFILE</div><h1>Build the context behind your career.</h1><p>Upload your resume first. Avenlo will extract the useful career context for you to review, edit and add to — you stay in control of what becomes part of your profile.</p><div className={styles.heroMeta}><span>Resume-first</span><span>Editable anytime</span><span>Private profile</span></div></div></section>
     <form className={styles.form} onSubmit={save}>
-      <section className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>01 · ABOUT YOU</span><h2>Profile basics</h2><p>Give the Avenlo team a clear snapshot of who you are professionally.</p></div></div><div className={styles.fieldGrid}>
+      <section className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>01 · RESUME IMPORT</span><h2>Start with your resume</h2><p>Upload your latest CV and Avenlo will extract your identity, skills, experience and education. Nothing is final until you review and save it.</p></div></div><div className={styles.resumeBox}><div><input className={styles.file} type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" disabled={importing || saving} onChange={(e) => void importResume(e.target.files?.[0] ?? null)} /><div className={styles.resumeMeta}><strong>{importing ? "Reading your resume…" : candidate.resume_path ? "Resume imported" : "No resume uploaded yet"}</strong><span>{importing ? "Extracting profile details and preparing them for review." : "PDF, DOC or DOCX · maximum 10 MB"}</span></div></div><Link href="/dashboard/resume" className={styles.resumeLink}>Open resume checker →</Link></div></section>
+
+      <section className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>02 · ABOUT YOU</span><h2>Review your profile basics</h2><p>These fields are pre-filled from your resume where possible. Edit anything that is wrong or add what the resume could not provide.</p></div></div><div className={styles.fieldGrid}>
         <Field label="Full name" required><input className={styles.input} required value={profile.full_name} onChange={(e) => setProfile({ ...profile, full_name: e.target.value })} /></Field>
         <Field label="Phone"><input className={styles.input} value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} /></Field>
         <Field label="Professional headline"><input className={styles.input} value={profile.headline} onChange={(e) => setProfile({ ...profile, headline: e.target.value })} placeholder="e.g. Product Manager — B2B SaaS" /></Field>
@@ -125,7 +159,7 @@ export default function CandidateProfilePage() {
         <Field label="Professional summary" full><textarea className={styles.textarea} rows={5} value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder="Your strengths, focus areas, achievements and the direction you want to move toward." /></Field>
       </div></section>
 
-      <section className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>02 · CAREER</span><h2>Career context</h2><p>These fields help Avenlo understand seniority, fit and your preferred direction.</p></div></div><div className={styles.fieldGrid}>
+      <section className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>03 · CAREER</span><h2>Career context</h2><p>Review the signals Avenlo uses to understand seniority, fit and your preferred direction.</p></div></div><div className={styles.fieldGrid}>
         <Field label="Years of experience"><input className={styles.input} type="number" min="0" max="60" step="0.5" value={candidate.experience_years ?? ""} onChange={(e) => setCandidate({ ...candidate, experience_years: e.target.value ? Number(e.target.value) : null })} /></Field>
         <Field label="Seniority"><select className={styles.select} value={candidate.seniority} onChange={(e) => setCandidate({ ...candidate, seniority: e.target.value })}><option value="">Select seniority</option>{["Entry level","Junior","Mid-level","Senior","Lead","Manager","Director","Executive"].map((item) => <option key={item}>{item}</option>)}</select></Field>
         <Field label="Preferred work mode"><select className={styles.select} value={candidate.work_mode} onChange={(e) => setCandidate({ ...candidate, work_mode: e.target.value })}><option value="">Select work mode</option>{["Remote","Hybrid","On-site"].map((item) => <option key={item}>{item}</option>)}</select></Field>
@@ -134,7 +168,7 @@ export default function CandidateProfilePage() {
         <Field label="Core skills" hint="comma separated" full><input className={styles.input} value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="React, SQL, Product Management, Figma" /></Field>
       </div></section>
 
-      <section className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>03 · EXPERIENCE</span><h2>Professional experience</h2><p>Include your current and past roles. Start and end years are dropdowns so your timeline stays consistent.</p></div><button className={styles.addButton} type="button" onClick={() => setWorkHistory((rows) => [...rows, emptyWork()])}>+ Add role</button></div><div className={styles.entries}>
+      <section className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>04 · EXPERIENCE</span><h2>Professional experience</h2><p>Imported roles can be corrected, expanded or removed. Add anything missing from your resume.</p></div><button className={styles.addButton} type="button" onClick={() => setWorkHistory((rows) => [...rows, emptyWork()])}>+ Add role</button></div><div className={styles.entries}>
         {workHistory.map((row, index) => <div className={styles.entry} key={row.id}><div className={styles.entryHead}><strong>Role {index + 1}</strong><button className={styles.remove} type="button" onClick={() => setWorkHistory((rows) => rows.filter((_, i) => i !== index))}>Remove</button></div><div className={styles.fieldGrid}>
           <Field label="Company" required><input className={styles.input} required value={row.company} onChange={(e) => updateWork(index, { company: e.target.value })} placeholder="Company name" /></Field>
           <Field label="Job title" required><input className={styles.input} required value={row.title} onChange={(e) => updateWork(index, { title: e.target.value })} placeholder="Software Engineer" /></Field>
@@ -144,10 +178,10 @@ export default function CandidateProfilePage() {
           <label className={styles.checkRow}><input type="checkbox" checked={row.currently_working} onChange={(e) => updateWork(index, { currently_working: e.target.checked, end_year: e.target.checked ? null : row.end_year })} /> I currently work here</label>
           <Field label="What did you do?" hint="optional" full><textarea className={styles.textarea} rows={4} value={row.description} onChange={(e) => updateWork(index, { description: e.target.value })} placeholder="Responsibilities, achievements, products shipped or measurable impact." /></Field>
         </div></div>)}
-        {!workHistory.length ? <div className={styles.empty}>No work history yet. Add your current role or a previous job so Avenlo can understand your experience level.</div> : null}
+        {!workHistory.length ? <div className={styles.empty}>No work history found yet. Add your current role or a previous job so Avenlo can understand your experience level.</div> : null}
       </div></section>
 
-      <section className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>04 · EDUCATION</span><h2>Education history</h2><p>Use dropdowns for the years so your education timeline is clean and consistent.</p></div><button className={styles.addButton} type="button" onClick={() => setEducation((rows) => [...rows, emptyEducation()])}>+ Add education</button></div><div className={styles.entries}>
+      <section className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>05 · EDUCATION</span><h2>Education history</h2><p>Review imported education and add anything missing. Start and end years use dropdowns for consistency.</p></div><button className={styles.addButton} type="button" onClick={() => setEducation((rows) => [...rows, emptyEducation()])}>+ Add education</button></div><div className={styles.entries}>
         {education.map((row, index) => <div className={styles.entry} key={row.id ?? `new-${index}`}><div className={styles.entryHead}><strong>Education {index + 1}</strong><button className={styles.remove} type="button" onClick={() => setEducation((rows) => rows.filter((_, i) => i !== index))}>Remove</button></div><div className={styles.fieldGrid}>
           <Field label="Institution" required><input className={styles.input} required value={row.institution} onChange={(e) => updateEducation(index, { institution: e.target.value })} placeholder="University / College" /></Field>
           <Field label="Degree"><input className={styles.input} value={row.degree} onChange={(e) => updateEducation(index, { degree: e.target.value })} placeholder="B.Sc. Computer Science" /></Field>
@@ -159,13 +193,8 @@ export default function CandidateProfilePage() {
         {!education.length ? <div className={styles.empty}>No education added yet. Add your degree, institution and field of study.</div> : null}
       </div></section>
 
-      <section className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>05 · RESUME</span><h2>CV / Resume</h2><p>Keep one current resume on file. Avenlo stores it privately for your matching workflow.</p></div></div><div className={styles.resumeBox}>
-        <div><input className={styles.file} type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(e) => setResume(e.target.files?.[0] ?? null)} /><div className={styles.resumeMeta}><strong>{resume ? resume.name : candidate.resume_path ? "Resume already on file" : "No resume uploaded yet"}</strong><span>{resume ? "Ready to upload when you save your profile." : "PDF, DOC or DOCX · maximum 10 MB"}</span></div></div>
-        <Link href="/dashboard/resume" className={styles.resumeLink}>Open resume checker →</Link>
-      </div></section>
-
       {error ? <p className={styles.error} role="alert">{error}</p> : null}{message ? <p className={styles.notice} role="status">{message}</p> : null}
-      <div className={styles.actions}><button className={styles.save} type="submit" disabled={saving}>{saving ? "Saving profile…" : "Save profile"}</button><Link className="btn" href="/dashboard">Back to dashboard</Link></div>
+      <div className={styles.actions}><button className={styles.save} type="submit" disabled={saving || importing}>{saving ? "Saving profile…" : importing ? "Importing resume…" : "Save profile"}</button><Link className="btn" href="/dashboard">Back to dashboard</Link></div>
     </form>
   </main>;
 }

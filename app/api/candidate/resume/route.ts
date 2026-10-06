@@ -36,9 +36,11 @@ export async function POST(request: Request) {
 
     const fileType = extension as "pdf" | "doc" | "docx";
     const admin = createAdminClient();
-    const [{ data: candidate }, { data: skills }] = await Promise.all([
-      admin.from("candidate_profiles").select("preferences").eq("user_id", user.id).maybeSingle(),
+    const [{ data: candidate }, { data: skills }, { data: currentProfile }, { data: existingEducation }] = await Promise.all([
+      admin.from("candidate_profiles").select("preferences, experience_years, seniority, work_mode, industry").eq("user_id", user.id).maybeSingle(),
       admin.from("candidate_skills").select("skill").eq("user_id", user.id).order("skill"),
+      admin.from("profiles").select("full_name, phone, headline, location, bio").eq("id", user.id).maybeSingle(),
+      admin.from("candidate_education").select("id").eq("user_id", user.id),
     ]);
 
     const bucket = await admin.storage.getBucket("candidate-documents");
@@ -98,14 +100,50 @@ export async function POST(request: Request) {
     }
 
     const preferences = candidate?.preferences && typeof candidate.preferences === "object" ? candidate.preferences : {};
-    const { error: profileError } = await admin.from("candidate_profiles").upsert({
-      user_id: user.id,
-      resume_path: path,
-      preferences: { ...preferences, resume_analysis: analysis, resume_import: extractedProfile },
-    }, { onConflict: "user_id" });
-    if (profileError) throw new Error(`Resume was uploaded but could not update your profile: ${profileError.message}`);
+    const resumeImport = { ...extractedProfile, importedAt: new Date().toISOString() };
+    const mergedPreferences = {
+      ...preferences,
+      target_roles: Array.isArray(preferences.target_roles) && preferences.target_roles.length ? preferences.target_roles : extractedProfile.target_roles,
+      work_history: Array.isArray(preferences.work_history) && preferences.work_history.length ? preferences.work_history : extractedProfile.work_history,
+      resume_analysis: analysis,
+      resume_import: resumeImport,
+    };
 
-    return NextResponse.json({ ok: true, path, analysis, extractedProfile });
+    const profilePatch = {
+      full_name: currentProfile?.full_name?.trim() || extractedProfile.full_name || null,
+      phone: currentProfile?.phone?.trim() || extractedProfile.phone || null,
+      headline: currentProfile?.headline?.trim() || extractedProfile.headline || null,
+      location: currentProfile?.location?.trim() || extractedProfile.location || null,
+      bio: currentProfile?.bio?.trim() || extractedProfile.bio || null,
+    };
+    const { error: profileUpdateError } = await admin.from("profiles").update(profilePatch).eq("id", user.id);
+    if (profileUpdateError) throw new Error(`Resume was uploaded but profile details could not be imported: ${profileUpdateError.message}`);
+
+    const { error: candidateError } = await admin.from("candidate_profiles").upsert({
+      user_id: user.id,
+      experience_years: candidate?.experience_years ?? extractedProfile.experience_years,
+      seniority: candidate?.seniority || extractedProfile.seniority,
+      work_mode: candidate?.work_mode || null,
+      industry: candidate?.industry || null,
+      resume_path: path,
+      preferences: mergedPreferences,
+    }, { onConflict: "user_id" });
+    if (candidateError) throw new Error(`Resume was uploaded but professional details could not be imported: ${candidateError.message}`);
+
+    const existingSkillSet = new Set((skills ?? []).map((item) => item.skill.toLowerCase()));
+    const newSkills = extractedProfile.skills.filter((skill) => !existingSkillSet.has(skill.toLowerCase())).map((skill) => ({ user_id: user.id, skill: skill.trim() })).filter((item) => item.skill);
+    if (newSkills.length) {
+      const { error: skillError } = await admin.from("candidate_skills").insert(newSkills);
+      if (skillError) throw new Error(`Resume was uploaded but detected skills could not be imported: ${skillError.message}`);
+    }
+
+    if (!(existingEducation?.length ?? 0) && extractedProfile.education.length) {
+      const educationRows = extractedProfile.education.map((item) => ({ user_id: user.id, institution: item.institution, degree: item.degree || null, field_of_study: item.field_of_study || null, start_year: item.start_year, end_year: item.currently_studying ? null : item.end_year, currently_studying: item.currently_studying }));
+      const { error: educationError } = await admin.from("candidate_education").insert(educationRows);
+      if (educationError) throw new Error(`Resume was uploaded but education could not be imported: ${educationError.message}`);
+    }
+
+    return NextResponse.json({ ok: true, path, analysis, extractedProfile: resumeImport });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to upload your resume." }, { status: 500 });
   }

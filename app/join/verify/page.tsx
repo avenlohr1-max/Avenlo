@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SiteHeader } from "../../components/site-header";
 
+const OTP_LENGTH = 8;
+
 function VerifyCandidateEmailContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
@@ -24,7 +26,9 @@ function VerifyCandidateEmailContent() {
     try {
       if (!email) throw new Error("Your verification email is missing. Please start again.");
       const code = token.replace(/\D/g, "");
-      if (code.length !== 6) throw new Error("Enter the 6-digit verification code from your email.");
+      if (code.length !== OTP_LENGTH) {
+        throw new Error(`Enter the ${OTP_LENGTH}-digit verification code from your email.`);
+      }
 
       const supabase = createClient();
       const { error: verifyError } = await supabase.auth.verifyOtp({
@@ -54,7 +58,7 @@ function VerifyCandidateEmailContent() {
         options: { shouldCreateUser: true },
       });
       if (resendError) throw resendError;
-      setMessage("A new 6-digit verification code has been sent. Please check your inbox.");
+      setMessage(`A new ${OTP_LENGTH}-digit verification code has been sent. Please check your inbox.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to resend the verification code.");
     } finally {
@@ -71,7 +75,7 @@ function VerifyCandidateEmailContent() {
             <span className="eyebrow">STEP 2 OF 3</span>
             <h1>Verify your email.</h1>
             <p>
-              We sent a 6-digit verification code to <strong>{email || "your email address"}</strong>. Enter it below to continue.
+              We sent an {OTP_LENGTH}-digit verification code to <strong>{email || "your email address"}</strong>. Enter it below to continue.
             </p>
 
             <form className="form" onSubmit={verify}>
@@ -81,11 +85,11 @@ function VerifyCandidateEmailContent() {
                   required
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  pattern="[0-9]{6}"
-                  maxLength={6}
+                  pattern={`[0-9]{${OTP_LENGTH}}`}
+                  maxLength={OTP_LENGTH}
                   value={token}
-                  onChange={(e) => setToken(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="000000"
+                  onChange={(e) => setToken(e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH))}
+                  placeholder={"0".repeat(OTP_LENGTH)}
                   aria-describedby="verification-help"
                 />
               </label>

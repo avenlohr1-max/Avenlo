@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { analyzeResume, extractResumeText } from "@/lib/resume-analysis";
+import { extractCandidateProfile } from "@/lib/resume-profile";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -61,6 +62,7 @@ export async function POST(request: Request) {
     if (upload.error) throw new Error(`Resume upload failed: ${upload.error.message}`);
 
     let analysis;
+    let extractedProfile;
     try {
       const extracted = await extractResumeText(file, fileType);
       analysis = analyzeResume({
@@ -70,6 +72,7 @@ export async function POST(request: Request) {
         pageCount: extracted.pageCount,
         candidateSkills: (skills ?? []).map((item) => item.skill),
       });
+      extractedProfile = extractCandidateProfile(extracted.text, analysis.detectedSkills, analysis.summary);
     } catch (parseError) {
       analysis = {
         version: 1 as const,
@@ -91,17 +94,18 @@ export async function POST(request: Request) {
         improvements: ["The resume was stored, but its text could not be extracted. Try exporting it again as a text-based PDF or DOCX."],
         parserNote: parseError instanceof Error ? parseError.message : "Resume text extraction failed.",
       };
+      extractedProfile = extractCandidateProfile("", [], null);
     }
 
     const preferences = candidate?.preferences && typeof candidate.preferences === "object" ? candidate.preferences : {};
     const { error: profileError } = await admin.from("candidate_profiles").upsert({
       user_id: user.id,
       resume_path: path,
-      preferences: { ...preferences, resume_analysis: analysis },
+      preferences: { ...preferences, resume_analysis: analysis, resume_import: extractedProfile },
     }, { onConflict: "user_id" });
     if (profileError) throw new Error(`Resume was uploaded but could not update your profile: ${profileError.message}`);
 
-    return NextResponse.json({ ok: true, path, analysis });
+    return NextResponse.json({ ok: true, path, analysis, extractedProfile });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to upload your resume." }, { status: 500 });
   }

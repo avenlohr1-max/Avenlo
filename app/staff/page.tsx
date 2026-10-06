@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { BrandLogo } from "@/app/components/brand-logo";
 import { JobModeration } from "./job-moderation";
 import { ApplicationReview } from "./application-review";
 import { ProfileStatusControl } from "./profile-status-control";
@@ -51,13 +52,7 @@ export default async function StaffWorkspace() {
     <main className="ops-page">
       <header className="ops-header">
         <div className="ops-header__inner">
-          <Link href="/" className="ops-brand" aria-label="Avenlo home">
-            <img src="/Avenlo-mark.png" alt="" className="ops-brand__mark" />
-            <span>
-              <strong>AVENLO</strong>
-              <small>OPERATIONS</small>
-            </span>
-          </Link>
+          <BrandLogo href="/" compact />
 
           <div className="ops-header__right">
             <div className="ops-user">

@@ -35,6 +35,14 @@ export default function AdminLogin() {
         throw new Error("This account is not authorized for founder/admin access.");
       }
 
+      // Establish a short-lived browser session marker so /staff cannot be entered
+      // simply by having a founder/staff Supabase session from the normal login page.
+      const sessionResponse = await fetch("/api/admin/session", { method: "POST" });
+      if (!sessionResponse.ok) {
+        await supabase.auth.signOut();
+        throw new Error("Unable to establish the private operations session.");
+      }
+
       window.location.assign("/staff");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to sign in.");

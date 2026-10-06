@@ -28,12 +28,7 @@ export default function CandidateApplicationsPage() {
         return;
       }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle();
-
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
       if (profile?.role !== "candidate") {
         window.location.assign("/dashboard");
         return;
@@ -74,24 +69,19 @@ export default function CandidateApplicationsPage() {
     void load();
   }, []);
 
-  if (loading) {
-    return <main className="page"><div className="container hero"><p className="muted">Loading your applications…</p></div></main>;
-  }
+  if (loading) return <main className="page"><div className="container hero"><p className="muted">Loading your applications…</p></div></main>;
 
   return (
     <main className="page">
       <nav className="nav container">
         <span className="brand">AVENLO</span>
-        <div className="actions">
-          <Link className="btn" href="/dashboard">Dashboard</Link>
-          <Link className="btn" href="/dashboard/jobs">Browse roles</Link>
-        </div>
+        <div className="actions"><Link className="btn" href="/dashboard">Dashboard</Link><Link className="btn" href="/dashboard/profile">My profile</Link></div>
       </nav>
 
       <section className="hero container" style={{ maxWidth: 1000 }}>
         <span className="eyebrow">APPLICATIONS</span>
-        <h1>Track your applications.</h1>
-        <p>Your application decisions are controlled by the Avenlo review workflow. You can always see the current status of your own submissions.</p>
+        <h1>Track your progress.</h1>
+        <p>Avenlo handles the opportunity search and recommendation process for you. This space shows the roles that have actually been put forward to you and where they stand in the review workflow.</p>
 
         {error ? <p className="error" role="alert">{error}</p> : null}
 
@@ -101,14 +91,10 @@ export default function CandidateApplicationsPage() {
               <span className="eyebrow">{application.status}</span>
               <h2>{application.job_title}</h2>
               <p className="muted">{application.company_name}</p>
-              <p>
-                <strong>Applied:</strong> {new Date(application.created_at).toLocaleDateString()}
-                {" · "}
-                <strong>Match signal:</strong> {application.match_score == null ? "Awaiting review" : application.match_score + "%"}
-              </p>
+              <p><strong>Added:</strong> {new Date(application.created_at).toLocaleDateString()} {" · "}<strong>Match signal:</strong> {application.match_score == null ? "Awaiting review" : application.match_score + "%"}</p>
             </article>
           ))}
-          {!applications.length && !error ? <p className="muted">You have not applied to any roles yet.</p> : null}
+          {!applications.length && !error ? <p className="muted">No opportunities have been put forward to you yet. Keep your profile current and Avenlo will surface relevant opportunities when there is a meaningful match.</p> : null}
         </div>
       </section>
     </main>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { BrandLogo } from "@/app/components/brand-logo";
@@ -20,9 +21,13 @@ function Stat({ label, value, tone = "default" }: { label: string; value: number
 }
 
 export default async function StaffWorkspace() {
+  const cookieStore = await cookies();
+  const hasAdminAccess = cookieStore.get("avenlo_admin_access")?.value === "1";
+  if (!hasAdminAccess) redirect("/admin/login");
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/admin/login");
 
   const { data: current } = await supabase
     .from("profiles")
@@ -30,7 +35,9 @@ export default async function StaffWorkspace() {
     .eq("id", user.id)
     .single();
 
-  if (current?.role !== "staff" && current?.role !== "founder") redirect("/dashboard");
+  // The cookie only proves that the user came through the private admin login.
+  // The database role remains the actual authorization check.
+  if (current?.role !== "staff" && current?.role !== "founder") redirect("/admin/login");
 
   const [{ data: users }, { data: candidates }, { data: companies }, { data: jobs }, { data: applications }, { data: reports }, { data: auditLogs }] = await Promise.all([
     supabase.from("profiles").select("id, full_name, email, role, status, created_at").order("created_at", { ascending: false }).limit(100),

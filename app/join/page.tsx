@@ -8,7 +8,6 @@ import { SiteHeader } from "../components/site-header";
 export default function Join() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,27 +20,23 @@ export default function Join() {
 
     try {
       const normalizedEmail = email.trim().toLowerCase();
-      if (!fullName.trim()) throw new Error("Please enter your full name.");
-      if (password.length < 8) throw new Error("Password must be at least 8 characters.");
+      const normalizedName = fullName.trim();
+      if (!normalizedName) throw new Error("Please enter your full name.");
+      if (!normalizedEmail) throw new Error("Please enter your email address.");
 
       const supabase = createClient();
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      const { error: otpError } = await supabase.auth.signInWithOtp({
         email: normalizedEmail,
-        password,
         options: {
-          data: { full_name: fullName.trim(), account_type: "candidate" },
+          shouldCreateUser: true,
+          data: { full_name: normalizedName, account_type: "candidate" },
         },
       });
 
-      if (signUpError) throw signUpError;
-      if (data.session) {
-        window.location.assign("/dashboard/profile");
-        return;
-      }
-
+      if (otpError) throw otpError;
       window.location.assign(`/join/verify?email=${encodeURIComponent(normalizedEmail)}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to create your account.");
+      setError(err instanceof Error ? err.message : "Unable to start verification.");
     } finally {
       setLoading(false);
     }
@@ -66,7 +61,7 @@ export default function Join() {
           <div className="inquiry-card">
             <span className="eyebrow">CREATE YOUR PROFILE</span>
             <h2>Join Avenlo.</h2>
-            <p>Create your account first. We&apos;ll verify your email with a one-time code before asking for your professional details.</p>
+            <p>Create your account with your email first. We&apos;ll verify it with a one-time code before asking for your password and professional details.</p>
 
             <form className="form" onSubmit={submit}>
               <label>
@@ -76,10 +71,6 @@ export default function Join() {
               <label>
                 Email
                 <input required type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-              </label>
-              <label>
-                Password
-                <input required type="password" minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
               </label>
 
               {error ? <p className="error" role="alert">{error}</p> : null}

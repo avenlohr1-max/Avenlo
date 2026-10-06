@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { analyzeResume, extractResumeText } from "@/lib/resume-analysis";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const MAX_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = new Set([
@@ -29,7 +33,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Upload a PDF, DOC, or DOCX file." }, { status: 400 });
     }
 
+    const fileType = extension as "pdf" | "doc" | "docx";
     const admin = createAdminClient();
+    const [{ data: candidate }, { data: skills }] = await Promise.all([
+      admin.from("candidate_profiles").select("preferences").eq("user_id", user.id).maybeSingle(),
+      admin.from("candidate_skills").select("skill").eq("user_id", user.id).order("skill"),
+    ]);
+
     const bucket = await admin.storage.getBucket("candidate-documents");
     if (bucket.error) {
       const created = await admin.storage.createBucket("candidate-documents", {
@@ -50,13 +60,48 @@ export async function POST(request: Request) {
     });
     if (upload.error) throw new Error(`Resume upload failed: ${upload.error.message}`);
 
+    let analysis;
+    try {
+      const extracted = await extractResumeText(file, fileType);
+      analysis = analyzeResume({
+        text: extracted.text,
+        fileName: file.name,
+        fileType,
+        pageCount: extracted.pageCount,
+        candidateSkills: (skills ?? []).map((item) => item.skill),
+      });
+    } catch (parseError) {
+      analysis = {
+        version: 1 as const,
+        analyzedAt: new Date().toISOString(),
+        fileName: file.name,
+        fileType,
+        wordCount: 0,
+        pageCount: null,
+        score: 0,
+        contact: { email: false, phone: false },
+        sections: [],
+        candidateSkills: (skills ?? []).map((item) => item.skill),
+        detectedSkills: [],
+        quantifiedBullets: 0,
+        actionBullets: 0,
+        bulletCount: 0,
+        summary: null,
+        strengths: [],
+        improvements: ["The resume was stored, but its text could not be extracted. Try exporting it again as a text-based PDF or DOCX."],
+        parserNote: parseError instanceof Error ? parseError.message : "Resume text extraction failed.",
+      };
+    }
+
+    const preferences = candidate?.preferences && typeof candidate.preferences === "object" ? candidate.preferences : {};
     const { error: profileError } = await admin.from("candidate_profiles").upsert({
       user_id: user.id,
       resume_path: path,
+      preferences: { ...preferences, resume_analysis: analysis },
     }, { onConflict: "user_id" });
     if (profileError) throw new Error(`Resume was uploaded but could not update your profile: ${profileError.message}`);
 
-    return NextResponse.json({ ok: true, path });
+    return NextResponse.json({ ok: true, path, analysis });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to upload your resume." }, { status: 500 });
   }

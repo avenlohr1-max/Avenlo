@@ -34,7 +34,7 @@ function VerifyCandidateEmailContent() {
       });
       if (verifyError) throw verifyError;
 
-      window.location.assign("/dashboard/profile?onboarding=1");
+      window.location.assign("/join/password");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to verify your email.");
     } finally {
@@ -68,10 +68,10 @@ function VerifyCandidateEmailContent() {
       <section className="company-hero">
         <div className="container" style={{ maxWidth: 720 }}>
           <div className="inquiry-card">
-            <span className="eyebrow">STEP 2 OF 2</span>
+            <span className="eyebrow">STEP 2 OF 3</span>
             <h1>Verify your email.</h1>
             <p>
-              We sent a 6-digit verification code to <strong>{email || "your email address"}</strong>. Enter it below to continue to your professional profile.
+              We sent a 6-digit verification code to <strong>{email || "your email address"}</strong>. Enter it below to continue.
             </p>
 
             <form className="form" onSubmit={verify}>

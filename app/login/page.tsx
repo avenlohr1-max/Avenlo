@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { createClient } from "../lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import { BrandLogo } from "../components/brand-logo";
 
 export default function Login() {

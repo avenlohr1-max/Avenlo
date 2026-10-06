@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { BrandLogo } from "@/app/components/brand-logo";
 import { SignOutButton } from "@/app/components/sign-out-button";
 import styles from "./dashboard.module.css";
 
@@ -34,10 +35,7 @@ export default async function Dashboard() {
     <main className={styles.dashboard}>
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <Link href="/" className={styles.brand} aria-label="Avenlo home">
-            <span className={styles.brandMark} aria-hidden="true">A</span>
-            <span>AVENLO</span>
-          </Link>
+          <BrandLogo compact />
           <nav className={styles.nav} aria-label="Candidate navigation">
             <Link href="/dashboard">Overview</Link>
             <Link href="/dashboard/profile">My profile</Link>

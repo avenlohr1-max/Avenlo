@@ -9,7 +9,10 @@ export function SignOutButton() {
   async function signOut() {
     setLoading(true);
     const supabase = createClient();
-    await supabase.auth.signOut();
+    await Promise.allSettled([
+      supabase.auth.signOut(),
+      fetch("/api/admin/session", { method: "DELETE" }),
+    ]);
     window.location.assign("/");
   }
 

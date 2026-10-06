@@ -30,9 +30,14 @@ export default function Login() {
         .eq("id", user.id)
         .maybeSingle();
 
+      // Founder/staff accounts must enter through the private operations login.
+      // Do not allow the normal login form to become an alternate admin entry point.
       if (profile?.role === "founder" || profile?.role === "staff") {
-        window.location.assign("/staff");
-      } else if (profile?.role === "company") {
+        await supabase.auth.signOut();
+        throw new Error("Founder and staff accounts must sign in through the private admin panel.");
+      }
+
+      if (profile?.role === "company") {
         window.location.assign("/company");
       } else {
         window.location.assign("/dashboard");

@@ -42,6 +42,7 @@ export default async function Dashboard() {
             <Link className={styles.activeNav} href="/dashboard">Overview</Link>
             <Link href="/dashboard/profile">My profile</Link>
             <Link href="/dashboard/recommendations">Recommendations</Link>
+            <Link href="/dashboard/applications">My opportunities</Link>
             <SignOutButton />
           </nav>
         </div>

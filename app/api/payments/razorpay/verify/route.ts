@@ -75,7 +75,7 @@ export async function POST(request: Request) {
       if (error) return NextResponse.json({ error: "Unable to record legal acceptance." }, { status: 500 });
     }
 
-    const { data: activated, error: activationError } = await db.rpc(
+    const { data: activated, error: activationError } = await supabase.rpc(
       "activate_candidate_service_order",
       {
         p_order_id: order.id,

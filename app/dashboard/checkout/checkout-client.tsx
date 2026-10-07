@@ -9,7 +9,8 @@ declare global {
 }
 
 type Props = {
-  orderId: string;
+  market: string;
+  planCode: string;
   keyId: string;
   amount: number;
   currency: string;
@@ -24,7 +25,6 @@ type Props = {
 };
 
 export default function CheckoutClient({
-  orderId,
   keyId,
   amount,
   currency,
@@ -42,7 +42,15 @@ export default function CheckoutClient({
     setError("");
 
     try {
-      const script = document.createElement("script");
+      const orderResponse = await fetch("/api/payments/razorpay/create-order", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ market, plan: planCode }),
+    });
+    const orderResult = await orderResponse.json();
+    if (!orderResponse.ok) throw new Error(orderResult.error || "Unable to create payment order.");
+
+    const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.async = true;
       document.body.appendChild(script);
@@ -55,20 +63,20 @@ export default function CheckoutClient({
 
       const razorpay = new window.Razorpay({
         key: keyId,
-        amount,
-        currency,
+        amount: orderResult.amount,
+        currency: orderResult.currency,
         name: "Avenlo",
         description: planName,
-        order_id: orderId,
+        order_id: orderResult.orderId,
         prefill: candidateEmail ? { email: candidateEmail } : undefined,
-        notes: { avenlo_order_id: orderId },
+        notes: { avenlo_order_id: orderResult.avenloOrderId },
         theme: { color: "#111827" },
         handler: async (response: Record<string, string>) => {
           const verification = await fetch("/api/payments/razorpay/verify", {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
-              orderId,
+              orderId: orderResult.avenloOrderId,
               ...response,
               legalVersions,
             }),

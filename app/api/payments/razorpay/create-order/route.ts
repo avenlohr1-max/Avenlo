@@ -122,6 +122,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       orderId: razorpayOrder.id,
+      order_id: razorpayOrder.id,
       avenloOrderId: order.id,
       amount: razorpayOrder.amount,
       currency: razorpayOrder.currency,

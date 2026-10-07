@@ -125,7 +125,7 @@ export async function POST(request: Request) {
       avenloOrderId: order.id,
       amount: razorpayOrder.amount,
       currency: razorpayOrder.currency,
-      keyId,
+      keyId: env("NEXT_PUBLIC_RAZORPAY_KEY_ID"),
       planName: plan.name,
     });
   } catch (error) {

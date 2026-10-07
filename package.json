@@ -19,7 +19,8 @@
     "pdfjs-dist": "6.4.299",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "zod": "3.25.76"
+    "zod": "3.25.76",
+    "razorpay": "2.9.6"
   },
   "devDependencies": {
     "@types/node": "22.15.30",

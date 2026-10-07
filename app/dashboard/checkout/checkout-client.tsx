@@ -4,7 +4,7 @@ import { useState } from "react";
 
 declare global {
   interface Window {
-    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
+    Razorpay?: new (options: Record<string, unknown>) => { open: () => void; on: (event: string, handler: (response: Record<string, unknown>) => void) => void };
   }
 }
 
@@ -48,7 +48,8 @@ export default function CheckoutClient({
     const orderResult = await orderResponse.json();
     if (!orderResponse.ok) throw new Error(orderResult.error || "Unable to create payment order.");
 
-    const script = document.createElement("script");
+    if (!window.Razorpay) {
+      const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.async = true;
       document.body.appendChild(script);
@@ -56,6 +57,7 @@ export default function CheckoutClient({
         script.onload = () => resolve();
         script.onerror = () => reject(new Error("Unable to load secure payment checkout."));
       });
+    }
 
       if (!window.Razorpay) throw new Error("Secure payment checkout is unavailable.");
 
@@ -86,6 +88,14 @@ export default function CheckoutClient({
         modal: {
           ondismiss: () => setBusy(false),
         },
+      });
+
+      razorpay.on("payment.failed", (response) => {
+        const description = typeof response.error === "object" && response.error !== null && "description" in response.error
+          ? String((response.error as { description?: unknown }).description || "Payment failed.")
+          : "Payment failed. Please try again.";
+        setError(description);
+        setBusy(false);
       });
 
       razorpay.open();

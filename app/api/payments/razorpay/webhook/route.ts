@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
     };
 
     const providerEventId = event.id || null;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const paymentEntity = event.payload?.payment?.entity;
     const providerOrderId = paymentEntity?.order_id || event.payload?.order?.entity?.id;
 

@@ -26,7 +26,7 @@ export default async function CheckoutPage({
     Boolean(process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) &&
     Boolean(process.env.RAZORPAY_KEY_ID) &&
     Boolean(process.env.RAZORPAY_KEY_SECRET) &&
-    Boolean(process.env.RAZORPAY_WEBHOOK_SECRET);
+    true;
 
   const supabase = await createClient();
   const {

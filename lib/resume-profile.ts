@@ -47,7 +47,7 @@ const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
 const PHONE = /(?:\+?\d[\d ()-]{7,}\d)/;
 
 function linesOf(text: string) {
-  return text.split(/\n+/).map((line) => line.replace(/^[\s•▪◦*\-]+/, "").trim()).filter(Boolean);
+  return text.split(/\n+/).map((line) => line.replace(/^[-\s•▪◦*]+/, "").trim()).filter(Boolean);
 }
 
 function isHeading(line: string) {

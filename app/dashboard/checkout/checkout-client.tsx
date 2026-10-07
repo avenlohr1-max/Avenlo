@@ -12,8 +12,6 @@ type Props = {
   market: string;
   planCode: string;
   keyId: string;
-  amount: number;
-  currency: string;
   planName: string;
   candidateEmail?: string | null;
   legalVersions: {

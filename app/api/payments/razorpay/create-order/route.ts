@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import Razorpay from "razorpay";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
 
     const keyId = env("RAZORPAY_KEY_ID");
     const keySecret = env("RAZORPAY_KEY_SECRET");
+    const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
 
     const { data: order, error: orderError } = await db
       .from("candidate_service_orders")
@@ -89,30 +91,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unable to create Avenlo service order." }, { status: 500 });
     }
 
-    const razorpayResponse = await fetch("https://api.razorpay.com/v1/orders", {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString("base64")}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        amount: Math.round(Number(plan.price) * 100),
+    const amount = Math.round(Number(plan.price) * 100);
+    if (amount < 100) {
+      return NextResponse.json({ error: "Payment amount must be at least 100 paise." }, { status: 400 });
+    }
+
+    let razorpayOrder: { id: string; amount: number; currency: string };
+    try {
+      razorpayOrder = await razorpay.orders.create({
+        amount,
         currency: plan.currency,
         receipt: order.id,
         notes: { avenlo_service_order_id: order.id, candidate_id: user.id },
-      }),
-      cache: "no-store",
-    });
-
-    if (!razorpayResponse.ok) {
+      });
+    } catch (error) {
       await db
         .from("candidate_service_orders")
         .update({ status: "cancelled", next_action: "Review failed payment-order creation" })
         .eq("id", order.id);
-      return NextResponse.json({ error: "Razorpay could not create the payment order." }, { status: 502 });
+      return NextResponse.json({ error: error instanceof Error ? error.message : "Razorpay could not create the payment order." }, { status: 500 });
     }
-
-    const razorpayOrder = (await razorpayResponse.json()) as { id: string; amount: number; currency: string };
     await db
       .from("candidate_service_orders")
       .update({

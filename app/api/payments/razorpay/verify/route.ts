@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     }
 
     const { data: activated, error: activationError } = await supabase.rpc(
-      "activate_candidate_service_order",
+      "settle_candidate_service_order",
       {
         p_order_id: order.id,
         p_provider: "razorpay",

@@ -26,8 +26,8 @@ type Props = {
 
 export default function CheckoutClient({
   keyId,
-  amount,
-  currency,
+  market,
+  planCode,
   planName,
   candidateEmail,
   legalVersions,

@@ -58,6 +58,7 @@ export default async function Dashboard() {
               <div className={styles.heroActions}>
                 <Link className="btn btn--primary" href="/dashboard/profile">{completion < 100 ? "Complete my profile" : "Review my profile"}</Link>
                 <Link className="btn" href="/dashboard/recommendations">See how recommendations work</Link>
+                <Link className="btn" href="/pricing">View Avenlo services</Link>
               </div>
             </div>
             <div className={styles.readiness}>

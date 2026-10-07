@@ -98,12 +98,17 @@ export async function POST(request: Request) {
 
     let razorpayOrder: { id: string; amount: number; currency: string };
     try {
-      razorpayOrder = await razorpay.orders.create({
+      const createdOrder = await razorpay.orders.create({
         amount,
         currency: plan.currency,
         receipt: order.id,
         notes: { avenlo_service_order_id: order.id, candidate_id: user.id },
       });
+      razorpayOrder = {
+        id: createdOrder.id,
+        amount: Number(createdOrder.amount),
+        currency: createdOrder.currency,
+      };
     } catch (error) {
       await db
         .from("candidate_service_orders")

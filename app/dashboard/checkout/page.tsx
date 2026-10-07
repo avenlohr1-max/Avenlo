@@ -23,6 +23,7 @@ export default async function CheckoutPage({
   const legalConfigured = Object.values(versions).every(Boolean);
   const paymentConfigured =
     process.env.AVENLO_PAYMENT_PROVIDER?.toLowerCase() === "razorpay" &&
+    Boolean(process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) &&
     Boolean(process.env.RAZORPAY_KEY_ID) &&
     Boolean(process.env.RAZORPAY_KEY_SECRET) &&
     Boolean(process.env.RAZORPAY_WEBHOOK_SECRET);
@@ -113,7 +114,7 @@ export default async function CheckoutPage({
               <CheckoutClient
                 market={market}
                 planCode={plan.code}
-                keyId={process.env.RAZORPAY_KEY_ID!}
+                keyId={process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!}
                 planName={plan.name}
                 candidateEmail={user.email}
                 legalVersions={{

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Candidate account required." }, { status: 403 });
     }
 
-    const { data: verification } = await supabase
+    const db = createAdminClient();
+    const { data: verification } = await db
       .from("candidate_verifications")
       .select("market,status")
       .eq("candidate_id", user.id)
@@ -52,7 +54,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Market classification does not match this plan." }, { status: 409 });
     }
 
-    const { data: plan } = await supabase
+    const { data: plan } = await db
       .from("candidate_plans")
       .select("id,name,price,currency,term_months,auto_renew,market,code")
       .eq("market", market)
@@ -66,7 +68,7 @@ export async function POST(request: Request) {
     const keyId = env("RAZORPAY_KEY_ID");
     const keySecret = env("RAZORPAY_KEY_SECRET");
 
-    const { data: order, error: orderError } = await supabase
+    const { data: order, error: orderError } = await db
       .from("candidate_service_orders")
       .insert({
         candidate_id: user.id,
@@ -103,7 +105,7 @@ export async function POST(request: Request) {
     });
 
     if (!razorpayResponse.ok) {
-      await supabase
+      await db
         .from("candidate_service_orders")
         .update({ status: "cancelled", next_action: "Review failed payment-order creation" })
         .eq("id", order.id);
@@ -111,7 +113,7 @@ export async function POST(request: Request) {
     }
 
     const razorpayOrder = (await razorpayResponse.json()) as { id: string; amount: number; currency: string };
-    await supabase
+    await db
       .from("candidate_service_orders")
       .update({
         provider_order_id: razorpayOrder.id,

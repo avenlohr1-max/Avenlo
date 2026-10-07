@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -33,9 +34,10 @@ export async function POST(request: Request) {
 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+    const db = createAdminClient();
     if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
 
-    const { data: order } = await supabase
+    const { data: order } = await db
       .from("candidate_service_orders")
       .select("id,candidate_id,provider_order_id,status,payment_status")
       .eq("id", body.orderId)
@@ -63,7 +65,7 @@ export async function POST(request: Request) {
     }
 
     for (const [documentType, version] of versions) {
-      const { error } = await supabase.from("candidate_legal_acceptances").insert({
+      const { error } = await db.from("candidate_legal_acceptances").insert({
         candidate_id: user.id,
         document_type: documentType,
         version,
@@ -73,7 +75,7 @@ export async function POST(request: Request) {
       if (error) return NextResponse.json({ error: "Unable to record legal acceptance." }, { status: 500 });
     }
 
-    const { data: activated, error: activationError } = await supabase.rpc(
+    const { data: activated, error: activationError } = await db.rpc(
       "activate_candidate_service_order",
       {
         p_order_id: order.id,

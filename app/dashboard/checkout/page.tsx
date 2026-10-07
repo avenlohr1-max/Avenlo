@@ -113,8 +113,7 @@ export default async function CheckoutPage({
               <CheckoutClient
                 market={market}
                 planCode={plan.code}
-                amount={Math.round(Number(plan.price) * 100)}
-                currency={plan.currency}
+                keyId={process.env.RAZORPAY_KEY_ID!}
                 planName={plan.name}
                 candidateEmail={user.email}
                 legalVersions={{

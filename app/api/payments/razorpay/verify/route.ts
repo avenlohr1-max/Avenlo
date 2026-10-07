@@ -54,10 +54,10 @@ export async function POST(request: Request) {
     }
 
     const versions = [
-      ["candidate_terms", body.legalVersions?.candidate],
-      ["privacy_notice", body.legalVersions?.privacy],
-      ["paid_service_terms", body.legalVersions?.paid],
-      ["refund_policy", body.legalVersions?.refund],
+      ["candidate_terms", process.env.AVENLO_CANDIDATE_TERMS_VERSION],
+      ["privacy_notice", process.env.AVENLO_PRIVACY_VERSION],
+      ["paid_service_terms", process.env.AVENLO_PAID_SERVICE_TERMS_VERSION],
+      ["refund_policy", process.env.AVENLO_REFUND_POLICY_VERSION],
     ] as const;
 
     if (versions.some(([, version]) => !version)) {

@@ -12,17 +12,24 @@ export function SiteFooter() {
         <div className="footer-links">
           <div>
             <span>Explore</span>
+            <Link href="/about">About Avenlo</Link>
             <Link href="/#why-avenlo">Why Avenlo</Link>
             <Link href="/#how-it-works">How it works</Link>
+            <Link href="/pricing">Pricing</Link>
+          </div>
+          <div>
+            <span>Get started</span>
             <Link href="/companies">For companies</Link>
             <Link href="/join">For candidates</Link>
+            <Link href="/login">Sign in</Link>
+            <Link href="/amaan">Amaan Makhdoom Ghori</Link>
           </div>
           <div>
-            <span>Sign in</span>
-            <Link href="/login">Candidate / company sign in</Link>
-          </div>
-          <div>
-            <span>Contact</span>
+            <span>Company &amp; support</span>
+            <Link href="/contact">Contact</Link>
+            <Link href="/privacy">Privacy Policy</Link>
+            <Link href="/terms">Terms &amp; Conditions</Link>
+            <Link href="/refunds">Refund &amp; Cancellation</Link>
             <a href="mailto:support@avenlo.in">support@avenlo.in</a>
             <a href="tel:+918074646755">+91 80746 46755</a>
           </div>

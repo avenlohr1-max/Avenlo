@@ -235,7 +235,7 @@ export default function CompanyPage() {
 
   if (loading) return <main className={`page ${styles.workspace}`}><div className="container hero"><p className="muted">Loading company workspace…</p></div></main>;
 
-  return <main className="page">
+  return <main className={`page ${styles.workspace}`}>
     <nav className={`nav container ${styles.sidebar}`}>
       <span className="brand">AVENLO</span>
       <div className="actions">

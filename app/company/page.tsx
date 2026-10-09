@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { SignOutButton } from "@/app/components/sign-out-button";
+import styles from "./company-dashboard.module.css";
 
 type Company = { id: string; name: string; website: string | null; industry: string | null; location: string | null; description: string | null };
 type Job = {
@@ -232,10 +233,10 @@ export default function CompanyPage() {
     }
   }
 
-  if (loading) return <main className="page"><div className="container hero"><p className="muted">Loading company workspace…</p></div></main>;
+  if (loading) return <main className={`page ${styles.workspace}`}><div className="container hero"><p className="muted">Loading company workspace…</p></div></main>;
 
   return <main className="page">
-    <nav className="nav container">
+    <nav className={`nav container ${styles.sidebar}`}>
       <span className="brand">AVENLO</span>
       <div className="actions">
         <Link className="btn" href="/">Home</Link>
@@ -244,10 +245,15 @@ export default function CompanyPage() {
       </div>
     </nav>
 
-    <section className="hero container" style={{ maxWidth: 1000 }}>
+    <section className={`hero container ${styles.content}`}>
       <span className="eyebrow">COMPANY WORKSPACE</span>
       <h1>{company ? company.name : "Set up your company."}</h1>
       <p>Describe your organisation and submit structured requirements. Roles are reviewed by Avenlo before candidates can see them.</p>
+      {company ? <div className={styles.overview}>
+        <article className={styles.overviewCard}><span>ALL ROLES</span><strong>{jobs.length}</strong><small>Created in your workspace</small></article>
+        <article className={styles.overviewCard}><span>IN REVIEW</span><strong>{jobs.filter((job) => job.status === "pending_review").length}</strong><small>Awaiting Avenlo review</small></article>
+        <article className={styles.overviewCard}><span>LIVE ROLES</span><strong>{jobs.filter((job) => job.status === "published" || job.status === "active").length}</strong><small>Visible opportunities</small></article>
+      </div> : null}
 
       {!company ? <form className="card form" onSubmit={saveCompany}>
         <label>Company name<input required value={companyForm.name} onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })} /></label>

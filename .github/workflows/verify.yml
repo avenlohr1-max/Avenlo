@@ -56,7 +56,7 @@ jobs:
           # Flag credential-shaped values, not legitimate server-side references to
           # environment variable names or PostgreSQL's service_role grant.
           if git grep -nEI \
-            '(BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY|sb_secret_[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{16,}|whsec_[A-Za-z0-9]{16,}|(SUPABASE_SERVICE_ROLE_KEY|RAZORPAY_KEY_SECRET|RESEND_API_KEY)[[:space:]]*[:=][[:space:]]*["'"'"'][^$][^'"'"']{12,}["'"'"'])' \
+            '(BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY|sb_secret_[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{16,}|whsec_[A-Za-z0-9]{16,}|(SUPABASE_SERVICE_ROLE_KEY|RAZORPAY_KEY_SECRET|RESEND_API_KEY)[[:space:]]*[:=][[:space:]]*[^$[:space:]][^[:space:]]{19,})' \
             -- . ':(exclude).git*' ':(exclude)package-lock.json'; then
             echo "Potential hard-coded credential detected. Use repository or deployment secrets."
             exit 1

@@ -53,8 +53,10 @@ jobs:
       - name: Secret pattern scan
         shell: bash
         run: |
-          if git grep -nE 'SUPABASE_SERVICE_ROLE|service_role|BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY' -- . ':(exclude).git*'; then
-            echo "Potential secret material found in repository."
+          # Scan for private-key material only. Variable names and SQL role identifiers
+          # such as SUPABASE_SERVICE_ROLE_KEY/service_role are not secret values.
+          if git grep -nE 'BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY' -- . ':(exclude).git*'; then
+            echo "Potential private-key material found in repository."
             exit 1
           fi
 

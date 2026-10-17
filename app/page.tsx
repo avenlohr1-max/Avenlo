@@ -91,12 +91,12 @@ export default function Home() {
         <div className={styles.container}>
           <div className={styles.sectionHead}>
             <div><span className={styles.eyebrow}>THE AVENLO SUITE</span><h2>Ten connected ideas. One human-centered direction.</h2></div>
-            <p>These experiences are in development. Their scope and availability may evolve as we validate what is most useful.</p>
+            <p>These ten product areas describe Avenlo’s direction. We’ll validate a focused first release and build the suite in stages; scope and availability may evolve.</p>
           </div>
           <div className={styles.productGrid}>
-            {products.map((product, index) => <article className={styles.productCard} key={product}><span className={styles.productNum}>{String(index + 1).padStart(2, "0")}</span><h3>{product}</h3><span className={styles.status}>In development</span></article>)}
+            {products.map((product, index) => <article className={styles.productCard} key={product}><span className={styles.productNum}>{String(index + 1).padStart(2, "0")}</span><h3>{product}</h3><span className={styles.status}>Vision</span></article>)}
           </div>
-          <p className={styles.visionNote}>The suite is being built around a simple loop: evidence → capability → scenario → decision → new evidence. AI can clarify signals and options; people remain responsible for decisions.</p>
+          <p className={styles.visionNote}>Avenlo’s intended product loop is evidence → capability → scenario → decision → new evidence. AI can clarify signals and options; people remain responsible for decisions.</p>
         </div>
       </section>
 

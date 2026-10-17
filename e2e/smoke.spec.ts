@@ -1,10 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-test("home page exposes primary navigation", async ({ page }) => {
+test("coming-soon homepage presents the new direction and planned suite", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Better talent decisions start with better intelligence." })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Sign in" }).first()).toHaveAttribute("href", "/login");
-  await expect(page.getByRole("link", { name: "Build your profile" }).first()).toHaveAttribute("href", "/join");
+  await expect(page.getByRole("heading", { name: "Understand talent. Unlock human potential." })).toBeVisible();
+  await expect(page.getByText(/Targeting November 2026/i)).toBeVisible();
+  await expect(page.getByRole("link", { name: /Get Early Access/ }).first()).toHaveAttribute("href", /mailto:support@avenlo\.in/);
+  await expect(page.getByRole("heading", { name: "Ten connected ideas. One human-centered direction." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Talent Record" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Existing user sign in" })).toHaveAttribute("href", "/login");
 });
 
 test("login page exposes accessible credentials and recovery", async ({ page }) => {
@@ -26,7 +29,6 @@ test("join page exposes candidate profile creation", async ({ page }) => {
 test("account recovery and suspension pages render", async ({ page }) => {
   await page.goto("/forgot-password");
   await expect(page.getByRole("heading", { name: "Reset your password." })).toBeVisible();
-
   await page.goto("/account-suspended");
   await expect(page.getByRole("heading", { name: /access is temporarily suspended/ })).toBeVisible();
 });

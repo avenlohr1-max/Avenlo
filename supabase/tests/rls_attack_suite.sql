@@ -98,7 +98,6 @@ BEGIN
   IF n <> 0 THEN RAISE EXCEPTION 'company read a non-applicant candidate record'; END IF;
   SELECT count(*) INTO n FROM storage.objects WHERE name = '10000000-0000-0000-0000-000000000003/resume.pdf';
   IF n <> 0 THEN RAISE EXCEPTION 'company read a non-applicant resume'; END IF;
-    );
   SELECT count(*) INTO n FROM storage.objects WHERE name = '10000000-0000-0000-0000-000000000001/resume.pdf';
   IF n <> 1 THEN RAISE EXCEPTION 'company could not read applicant resume'; END IF;
 

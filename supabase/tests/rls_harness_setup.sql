@@ -35,9 +35,9 @@ RETURNS text
 LANGUAGE sql
 IMMUTABLE
 SET search_path = ''
-AS $
+AS $$
   SELECT (string_to_array(path, '/'))[array_length(string_to_array(path, '/'), 1)];
-$;
+$$;
 
 CREATE TABLE IF NOT EXISTS storage.buckets (
   id text PRIMARY KEY,

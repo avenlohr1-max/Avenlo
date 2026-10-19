@@ -30,6 +30,15 @@ AS $$
   SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid;
 $$;
 
+CREATE OR REPLACE FUNCTION storage.filename(path text)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+SET search_path = ''
+AS $
+  SELECT (string_to_array(path, '/'))[array_length(string_to_array(path, '/'), 1)];
+$;
+
 CREATE TABLE IF NOT EXISTS storage.buckets (
   id text PRIMARY KEY,
   name text NOT NULL,

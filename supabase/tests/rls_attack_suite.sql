@@ -98,17 +98,6 @@ BEGIN
   IF n <> 0 THEN RAISE EXCEPTION 'company read a non-applicant candidate record'; END IF;
   SELECT count(*) INTO n FROM storage.objects WHERE name = '10000000-0000-0000-0000-000000000003/resume.pdf';
   IF n <> 0 THEN RAISE EXCEPTION 'company read a non-applicant resume'; END IF;
-  RAISE NOTICE 'storage policies %',
-    (SELECT string_agg(policyname || ' [' || permissive || '] ' || coalesce(qual, with_check, ''), E'\n')
-     FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects');
-  RAISE NOTICE 'company role %, uid %, folder %, matching application %',
-    public.current_user_role(), auth.uid(), storage.foldername('10000000-0000-0000-0000-000000000001/resume.pdf'),
-    EXISTS (
-      SELECT 1 FROM public.applications a
-      JOIN public.jobs j ON j.id = a.job_id
-      JOIN public.companies c ON c.id = j.company_id
-      WHERE a.candidate_id = ((storage.foldername('10000000-0000-0000-0000-000000000001/resume.pdf'))[1])::uuid
-        AND c.owner_id = auth.uid()
     );
   SELECT count(*) INTO n FROM storage.objects WHERE name = '10000000-0000-0000-0000-000000000001/resume.pdf';
   IF n <> 1 THEN RAISE EXCEPTION 'company could not read applicant resume'; END IF;

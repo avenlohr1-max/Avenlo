@@ -10,6 +10,7 @@ INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
   ('30000000-0000-0000-0000-000000000001', 'staff@example.test', '{"full_name":"Staff"}'),
   ('40000000-0000-0000-0000-000000000001', 'founder@example.test', '{"full_name":"Founder"}');
 
+UPDATE public.profiles SET role = 'company' WHERE id IN ('20000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000002');
 UPDATE public.profiles SET role = 'staff' WHERE id = '30000000-0000-0000-0000-000000000001';
 UPDATE public.profiles SET role = 'founder' WHERE id = '40000000-0000-0000-0000-000000000001';
 
@@ -91,6 +92,8 @@ BEGIN
     '70000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000002'
   );
   IF n <> 2 THEN RAISE EXCEPTION 'company could not read applicants for its role'; END IF;
+  SELECT count(*) INTO n FROM public.candidate_profiles WHERE user_id = '10000000-0000-0000-0000-000000000001';
+  IF n <> 1 THEN RAISE EXCEPTION 'company could not read applicant candidate record'; END IF;
   SELECT count(*) INTO n FROM public.candidate_profiles WHERE user_id = '10000000-0000-0000-0000-000000000003';
   IF n <> 0 THEN RAISE EXCEPTION 'company read a non-applicant candidate record'; END IF;
   SELECT count(*) INTO n FROM storage.objects WHERE name = '10000000-0000-0000-0000-000000000003/resume.pdf';

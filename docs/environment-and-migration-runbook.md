@@ -7,20 +7,18 @@
 | Environment | Verified behavior | Required control |
 | --- | --- | --- |
 | Local development | Use the local Supabase stack and local environment values such as `.env.local`; keep secrets out of Git. | Use synthetic data and never point local development at production. |
-| GitHub pull request CI | The Phase 0 workflow uses disposable PostgreSQL 16, applies repository migration scripts in filename order, and runs dependency audit, credential scan, lint, typecheck, unit tests, build, E2E smoke tests, and RLS checks. Latest completed Phase 0 run #227 passed; run #228 is verifying the runbook update. | Keep production credentials out of CI. Run checks against the exact release candidate. |
-| Vercel Preview | GitHub pull requests produce Preview deployments; previews have been observed as Ready. | The Supabase project configured for Preview has not been independently verified. Do not use real candidate data in Preview until the mapping and data exposure are confirmed. |
+| GitHub pull request CI | The Phase 0 workflow uses disposable PostgreSQL 16, applies repository migration scripts in filename order, and runs dependency audit, credential scan, lint, typecheck, unit tests, build, E2E smoke tests, and RLS checks. Latest completed Phase 0 run #229 passed. | Keep production credentials out of CI. Run checks against the exact release candidate. |
+| Vercel Preview | The founder confirmed Preview uses the same Supabase project ref as Production: `yzuuutynqfpbiozlrfmy`. Preview is therefore connected to the production database. | Treat Preview as production-data access. Do not test writes, migrations, or real candidate/employer journeys in Preview. Use local development and disposable CI for write testing. |
 | Separate staging | Not part of the approved plan. Development uses the local stack and disposable CI databases with synthetic data. | Keep real candidate and employer data out of development and CI. |
-| Production | The repository describes Vercel plus Supabase as the intended production path. The exact Vercel environment-to-Supabase project mapping and production migration procedure remain unverified. | Confirm the production Supabase ref, Vercel environment mapping, backup/restore procedure, and release owner before any production deployment. |
+| Production | The founder confirmed Production uses Supabase project ref `yzuuutynqfpbiozlrfmy`, project `supabase-apricot-battery`, in ap-south-1. | Any Preview code can reach the production database. Confirm production backup/restore, migration baseline, and release owner before a production database change. |
 
 ## Current Supabase connection findings
 
-The Supabase connection exposes one active project, `supabase-apricot-battery`, ref `yzuuutynqfpbiozlrfmy`, in ap-south-1. Read-only inspection found Avenlo's core public tables: profiles, candidate_profiles, candidate_skills, companies, jobs, and applications. The project contains Avenlo's application schema, and the founder confirmed it is Avenlo's Supabase project.
+The connected project is Avenlo's Supabase project and is the configured target for both Vercel Production and Preview. Read-only inspection found Avenlo's core public tables: profiles, candidate_profiles, candidate_skills, companies, jobs, and applications.
 
-The project has no recorded migration history available through the Supabase migration listing, and there is no `supabase_migrations` schema. The remote `candidate_profiles` table does not have the `share_with_applicant_companies` column from PR #6 migration 0023. The applicant profile policies from migration 0016 are also absent. The live schema therefore does not match the current repository migration state; the baseline must be captured and reconciled before any push. The exact mapping from Vercel Production and Preview to this Supabase project remains unconfirmed.
+The project has no recorded migration history available through the Supabase migration listing, and there is no `supabase_migrations` schema. The remote `candidate_profiles` table does not have the `share_with_applicant_companies` column from PR #6 migration 0023. The applicant profile policies from migration 0016 are also absent. The live schema therefore does not match the current repository migration state; the baseline must be captured and reconciled before any push.
 
-A read-only Supabase security-advisor check reported that `public.current_user_role()` and `public.handle_new_user()` are SECURITY DEFINER functions executable by both `anon` and `authenticated`, and that leaked-password protection is disabled. Review the intended function exposure and Auth setting; do not revoke function access blindly because application policies may depend on `current_user_role()`. Track and verify appropriate remediations before real candidate data or public access.
-
-No migration or setting change was applied during this review.
+A read-only Supabase security-advisor check reported that `public.current_user_role()` and `public.handle_new_user()` are SECURITY DEFINER functions executable by both `anon` and `authenticated`, and that leaked-password protection is disabled. Inspection showed `current_user_role()` returns the role associated with the caller's own profile, while `handle_new_user()` inserts a profile for the auth user trigger. Review function grants and harden search paths in a migration after replaying it in CI; do not revoke access blindly because RLS policies depend on `current_user_role()`. Enable leaked-password protection after reviewing the Auth impact. No migration or setting change was applied during this review.
 
 ## Migration system facts
 
@@ -32,7 +30,7 @@ No migration or setting change was applied during this review.
 
 ## Direct-to-production release sequence
 
-1. Confirm which Vercel environment is connected to the Avenlo Supabase project, without exposing key values.
+1. Keep Vercel Preview from performing database writes while it shares the Production project. Use the local stack and disposable CI for write and migration tests.
 2. Capture the existing production schema read-only and compare it with the repository. Establish a reviewed baseline before enabling automated migration tracking; do not rename migrations that may already have been applied.
 3. Review and resolve the database security-advisor findings and verify Auth password protection settings.
 4. Validate changes in the local stack and disposable CI PostgreSQL with synthetic data, including RLS and resume-access regressions.
@@ -50,6 +48,6 @@ For each release candidate, confirm:
 - lint, typecheck, unit tests, production build, and E2E checks pass;
 - every migration replays against a clean disposable database;
 - RLS regression checks pass with candidate sharing enabled and disabled;
-- Vercel Preview behavior and its Supabase project mapping are understood before real data is used;
+- Vercel Preview is treated as connected to Production and does not perform writes or use real-data test journeys;
 - the production schema baseline, security-advisor remediations, backup, and rollback procedure are verified before a production database change;
 - public rollout remains paused until separately approved.

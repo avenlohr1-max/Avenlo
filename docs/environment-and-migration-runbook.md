@@ -1,13 +1,14 @@
 # Environment and database migration runbook
 
-**Status:** Verified engineering facts and outstanding release controls as of 20 October 2026.
+**Updated:** 20 October 2026, 22:54 IST (UTC+05:30)  
+**Status:** Verified engineering facts and outstanding release controls.
 
 ## Environment map
 
 | Environment | Verified behavior | Required control |
 | --- | --- | --- |
 | Local development | Use the local Supabase stack and local environment values such as `.env.local`; keep secrets out of Git. | Use synthetic data and never point local development at production. |
-| GitHub pull request CI | The Phase 0 workflow uses disposable PostgreSQL 16, applies repository migration scripts in filename order, and runs dependency audit, credential scan, lint, typecheck, unit tests, build, E2E smoke tests, and RLS checks. Latest completed Phase 0 run #229 passed. | Keep production credentials out of CI. Run checks against the exact release candidate. |
+| GitHub pull request CI | The Phase 0 workflow uses disposable PostgreSQL 16, applies repository migration scripts in filename order, and runs dependency audit, credential scan, lint, typecheck, unit tests, build, E2E smoke tests, and RLS checks. Latest completed Phase 0 run #261 passed the full migration replay and RLS suite, including function-grant hardening. | Keep production credentials out of CI. Run checks against the exact release candidate. |
 | Vercel Preview | The founder confirmed Preview uses the same Supabase project ref as Production: `yzuuutynqfpbiozlrfmy`. Preview is therefore connected to the production database. | Treat Preview as production-data access. Do not test writes, migrations, or real candidate/employer journeys in Preview. Use local development and disposable CI for write testing. |
 | Separate staging | Not part of the approved plan. Development uses the local stack and disposable CI databases with synthetic data. | Keep real candidate and employer data out of development and CI. |
 | Production | The founder confirmed Production uses Supabase project ref `yzuuutynqfpbiozlrfmy`, project `supabase-apricot-battery`, in ap-south-1. | Any Preview code can reach the production database. Confirm production backup/restore, migration baseline, and release owner before a production database change. |
@@ -16,9 +17,9 @@
 
 The connected project is Avenlo's Supabase project and is the configured target for both Vercel Production and Preview. Read-only inspection found Avenlo's core public tables: profiles, candidate_profiles, candidate_skills, companies, jobs, and applications.
 
-The project has no recorded migration history available through the Supabase migration listing, and there is no `supabase_migrations` schema. The remote `candidate_profiles` table does not have the `share_with_applicant_companies` column from PR #6 migration 0023. The applicant profile policies from migration 0016 are also absent. The live schema therefore does not match the current repository migration state; the baseline must be captured and reconciled before any push.
+The project has no recorded migration history available through the Supabase migration listing, and there is no `supabase_migrations` schema. The remote `candidate_profiles` table does not have the `share_with_applicant_companies` column from PR #6 migration 0023. The applicant profile policies from migration 0016 are also absent. The live schema therefore does not match the current repository migration state; the baseline must be captured and reconciled before any push. The Avenlo Supabase organization is on the Free plan. Supabase does not provide automatic backups on Free, so a verified off-site logical export or an explicitly approved plan upgrade is required before production schema changes (see [Supabase backup guidance](https://supabase.com/docs/guides/platform/backups)).
 
-A read-only Supabase security-advisor check reported that `public.current_user_role()` and `public.handle_new_user()` are SECURITY DEFINER functions executable by both `anon` and `authenticated`, and that leaked-password protection is disabled. Inspection showed `current_user_role()` returns the role associated with the caller's own profile, while `handle_new_user()` inserts a profile for the auth user trigger. Review function grants and harden search paths in a migration after replaying it in CI; do not revoke access blindly because RLS policies depend on `current_user_role()`. Enable leaked-password protection after reviewing the Auth impact. No migration or setting change was applied during this review.
+A read-only Supabase security-advisor check reported that `public.current_user_role()` and `public.handle_new_user()` are SECURITY DEFINER functions executable by both `anon` and `authenticated`, and that leaked-password protection is disabled. Phase 0 PR #7 now contains migration `0027_phase0_security_hardening.sql`: it moves the role helper into a non-API `private` schema, rewrites dependent policies, removes direct execution from public trigger helpers, and retains trigger behavior. CI run #261 passed migration replay and RLS assertions for these changes. The migration has not been applied to Production, so the current advisor findings remain until the schema baseline is reconciled and the migration is deployed. Leaked-password protection still needs to be enabled by an authenticated project owner; it is a Supabase Auth dashboard setting.
 
 ## Migration system facts
 

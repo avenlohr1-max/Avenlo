@@ -75,7 +75,7 @@ export default async function Dashboard() {
       <section className={styles.content}>
         <div className={styles.sectionHeading}>
           <div><span className={styles.eyebrow}>CAREER INTELLIGENCE</span><h2>Your career toolkit</h2></div>
-          <p>Three practical tools help you improve the signal Avenlo uses. Automated checks support the team; human judgement stays at the centre.</p>
+          <p>Five practical tools help you review your career record and explore next steps. Automated checks support the team; human judgement stays at the centre.</p>
         </div>
 
         <div className={styles.toolGrid}>
@@ -102,6 +102,12 @@ export default async function Dashboard() {
             <h3>Build your next learning step</h3>
             <p>Get focused learning paths based on your current skills, experience and career direction — not a generic course list.</p>
             <span className={styles.toolLink}>Get learning guidance →</span>
+          </Link>
+          <Link href="/dashboard/scenarios" className={styles.tool}>
+            <span className={styles.toolIcon}>SC</span><span className={styles.toolLabel}>CAREER SCENARIO LAB</span>
+            <h3>Explore possible next roles</h3>
+            <p>Compare up to three candidate-defined role scenarios. Keep assumptions, evidence, unknowns, and next steps visible.</p>
+            <span className={styles.toolLink}>Open Scenario Lab →</span>
           </Link>
         </div>
 

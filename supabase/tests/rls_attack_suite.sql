@@ -76,7 +76,7 @@ BEGIN
   SELECT count(*) INTO n FROM public.candidate_skills WHERE user_id = '10000000-0000-0000-0000-000000000002';
   IF n <> 0 THEN RAISE EXCEPTION 'candidate read another candidate skills'; END IF;
   SELECT count(*) INTO n FROM public.candidate_signals WHERE candidate_id = '10000000-0000-0000-0000-000000000001';
-  IF n <> 1 THEN RAISE EXCEPTION 'candidate could not read own signal'; END IF;
+  IF n <> 2 THEN RAISE EXCEPTION 'candidate could not read own signal'; END IF;
   SELECT count(*) INTO n FROM public.candidate_signals WHERE candidate_id = '10000000-0000-0000-0000-000000000002';
   IF n <> 0 THEN RAISE EXCEPTION 'candidate read another candidate signal'; END IF;
   SELECT count(*) INTO n FROM public.candidate_capability_evidence WHERE candidate_id = '10000000-0000-0000-0000-000000000001';

@@ -70,6 +70,7 @@ export default async function StaffWorkspace() {
             <Link className="ops-header__link" href="/dashboard">Candidate view</Link>
             <Link className="ops-header__link" href="/staff/opportunities">Curate opportunities</Link>
             <Link className="ops-header__link" href="/staff/roles">Review role briefs</Link>
+            <Link className="ops-header__link" href="/staff/services">Human service cases</Link>
             <SignOutButton />
           </div>
         </div>

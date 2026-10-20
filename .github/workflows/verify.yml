@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main", "feature/avenlo-production"]
   pull_request:
-    branches: ["main", "product/talent-record-sharing", "fix/candidate-account-erasure", "product/opportunity-intelligence"]
+    branches: ["main", "product/**", "fix/candidate-account-erasure"]
 
 permissions:
   contents: read
@@ -112,3 +112,8 @@ jobs:
         env:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/role_intelligence_studio.sql
+
+      - name: Verify integrated consent, collaboration, proof, dossiers and services
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/collaboration_suite.sql

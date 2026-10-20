@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { type RoleBrief } from "@/lib/role-definition";
 import { RoleBriefView } from "@/app/components/role-brief-view";
 import { RoleEditor } from "./role-editor";
+import { proposeJobFromBrief } from "./actions";
+import { SubmitButton } from "@/app/components/submit-button";
 
 type History = { revision: number; changed_at: string; after_data: RoleBrief };
 export default async function RoleStudio({ searchParams }: { searchParams: Promise<{ edit?: string; result?: string }> }) {
@@ -24,11 +26,12 @@ export default async function RoleStudio({ searchParams }: { searchParams: Promi
   return <main className="section section--light"><div className="container" style={{ maxWidth: 980 }}>
     <Link href="/company">← Company workspace</Link><span className="eyebrow" style={{ display: "block", marginTop: 24 }}>ROLE INTELLIGENCE STUDIO</span><h1>Define the work and the evidence it needs.</h1>
     <p>Describe outcomes, distinguish essential requirements from preferred capabilities, and explain the evidence expected for each. Avenlo reviews the definition with you.</p>
-    <p>Brief approval records a human review of this definition. Publishing a job remains a separate moderated workflow in your company workspace.</p>
+    <p>After definition approval, propose a job from that revision. A separate human job review controls publication. Editing the approved definition pauses linked open jobs until the revised work is reviewed.</p>
     {result && <p role={result === "saved" ? "status" : "alert"}>{result === "saved" ? "Role brief saved with a new revision." : "Unable to save. Check field limits, review requirements and duplicates, or reload if someone reviewed this revision while you were editing."}</p>}
     {failed ? <p role="alert">Unable to load Role Intelligence Studio. Please refresh and try again.</p> : !companies.data?.length ? <p>Create a company profile in your <Link href="/company">company workspace</Link> first.</p> : <>
       <section><h2>Your latest role briefs</h2>{rows.length ? <ul>{rows.map((row) => <li key={row.id}><Link href={`/company/roles?edit=${row.id}`}>{row.title}</Link> · Revision {row.revision} · {row.status.replaceAll("_", " ")}</li>)}</ul> : <p>No briefs yet. Start your first definition below.</p>}<Link className="btn" href="/company/roles">Start a new brief</Link></section>
       {edit && !selected ? <p role="alert">This brief is unavailable in the latest 50 records. Choose a brief from your list.</p> : <section style={{ marginTop: 32 }}><h2>{selected ? `Edit ${selected.title}` : "New role brief"}</h2>{selected?.review_note && <aside><h3>Review feedback</h3><p>{selected.review_note}</p><p>{selected.reviewed_at ? new Date(selected.reviewed_at).toLocaleString("en-IN") : ""}</p></aside>}<RoleEditor key={`${selected?.id ?? "new"}-${selected?.revision ?? 0}`} companies={companies.data} brief={selected} /></section>}
+      {selected?.status === "approved" && <form action={proposeJobFromBrief} style={{ marginTop: 24 }}><input type="hidden" name="id" value={selected.id} /><input type="hidden" name="revision" value={selected.revision} /><SubmitButton>Propose a job from this approved revision</SubmitButton></form>}
       {selected && <section style={{ marginTop: 32 }}><h2>Revision history</h2><p>The latest 20 revisions record the submitted definition, corrections and review feedback.</p>{((history.data ?? []) as History[]).map((entry) => <details key={entry.revision} style={{ marginBottom: 16 }}><summary>Revision {entry.revision} · {entry.after_data.status.replaceAll("_", " ")} · {new Date(entry.changed_at).toLocaleString("en-IN")}</summary><RoleBriefView definition={entry.after_data} />{entry.after_data.review_note && <p>Review note: {entry.after_data.review_note}</p>}</details>)}</section>}
     </>}
   </div></main>;

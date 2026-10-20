@@ -5,6 +5,20 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { reviewGaps, roleDefinitionSchema } from "@/lib/role-definition";
+import { collaborationContext } from "@/lib/collaboration-server";
+
+export async function proposeJobFromBrief(form: FormData) {
+  const { supabase, user } = await collaborationContext(["company"]);
+  const parsed = z.object({ id: z.string().uuid(), revision: z.coerce.number().int().positive() }).safeParse(Object.fromEntries(form));
+  if (!parsed.success) redirect("/company/roles?result=invalid");
+  const { data: brief, error: lookupError } = await supabase.from("employer_role_briefs").select("*").eq("id", parsed.data.id).eq("revision", parsed.data.revision).eq("status", "approved").maybeSingle();
+  if (lookupError || !brief) redirect("/company/roles?result=error");
+  const { data: company } = await supabase.from("companies").select("id").eq("id", brief.company_id).eq("owner_id", user.id).maybeSingle();
+  if (!company) redirect("/company/roles?result=error");
+  const { error } = await supabase.from("jobs").insert({ company_id: company.id, created_by: user.id, title: brief.title, description: brief.summary, location: brief.location, work_mode: brief.work_mode, role_brief_id: brief.id, role_brief_revision: brief.revision, status: "pending_review" });
+  if (error) redirect("/company/roles?result=error");
+  revalidatePath("/company"); revalidatePath("/staff"); redirect("/company");
+}
 
 export async function saveRoleBrief(form: FormData) {
   const supabase = await createClient();

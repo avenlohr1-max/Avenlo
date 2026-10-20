@@ -67,7 +67,7 @@ using (
     from public.applications a
     join public.jobs j on j.id = a.job_id
     join public.companies c on c.id = j.company_id
-    where a.candidate_id = ((storage.foldername(storage.objects.name))[1])::uuid
+    where a.candidate_id = ((storage.foldername(name))[1])::uuid
       and c.owner_id = auth.uid()
   )
 );

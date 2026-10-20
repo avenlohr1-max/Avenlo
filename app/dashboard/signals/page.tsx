@@ -71,6 +71,15 @@ export default function SignalLedgerPage() {
 
   function resetForm() { setEditing(null); setForm(emptyForm); }
 
+  async function deleteSignal(signal: Signal) {
+    if (!candidateId || !window.confirm("Delete this signal and its correction history? This cannot be undone.")) return;
+    setError(null); setMessage(null);
+    const { error: deleteError } = await supabase.from("candidate_signals").delete().eq("id", signal.id).eq("candidate_id", candidateId);
+    if (deleteError) { setError("The signal could not be deleted. Please retry."); return; }
+    await load();
+    setMessage("Signal and its correction history deleted.");
+  }
+
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!candidateId) return;
@@ -128,7 +137,7 @@ export default function SignalLedgerPage() {
                 <div className={styles.cardTop}><div><span className={styles.type}>{signal.signal_type}</span><h3>{signal.statement}</h3></div><span className={styles.status}>{statusLabels[signal.verification_status]}</span></div>
                 <div className={styles.metadata}><span>Source: <strong>{signal.source_label}</strong> ({signal.source_type.replace("_", " ")})</span>{signal.source_date && <span>Date: <strong>{new Date(signal.source_date + "T00:00:00").toLocaleDateString()}</strong></span>}</div>
                 <div className={styles.detail}><strong>Context</strong><p>{signal.context}</p></div><div className={styles.uncertainty}><strong>Uncertainty</strong><p>{signal.uncertainty_note}</p></div>
-                <div className={styles.cardActions}><button className={styles.quietButton} type="button" onClick={() => startEdit(signal)}>Correct or review</button>{history.length > 0 && <span>{history.length} {history.length === 1 ? "correction" : "corrections"} recorded</span>}</div>
+                <div className={styles.cardActions}><button className={styles.quietButton} type="button" onClick={() => startEdit(signal)}>Correct or review</button><button className={styles.quietButton} type="button" onClick={() => void deleteSignal(signal)}>Delete signal</button>{history.length > 0 && <span>{history.length} {history.length === 1 ? "correction" : "corrections"} recorded</span>}</div>
                 {history.length > 0 && <details className={styles.history}><summary>View correction history</summary><ol>{history.map((revision) => <li key={revision.id}><time dateTime={revision.changed_at}>{new Date(revision.changed_at).toLocaleString()}</time><p><strong>Before:</strong> {String(revision.before_data.statement ?? "")}</p><p><strong>After:</strong> {String(revision.after_data.statement ?? "")}</p></li>)}</ol></details>}
               </article>;
             })}

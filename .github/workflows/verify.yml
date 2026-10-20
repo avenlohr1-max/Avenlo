@@ -118,6 +118,20 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/collaboration_suite.sql
 
+      - name: Practice synthetic backup and restore
+        env:
+          PGPASSWORD: postgres
+        shell: bash
+        run: |
+          pg_dump -h localhost -U postgres -d avenlo_test --no-owner -Fc -f "$RUNNER_TEMP/avenlo-synthetic.dump"
+          createdb -h localhost -U postgres avenlo_restore
+          pg_restore -h localhost -U postgres -d avenlo_restore --no-owner --exit-on-error "$RUNNER_TEMP/avenlo-synthetic.dump"
+          psql -h localhost -U postgres -d avenlo_restore -v ON_ERROR_STOP=1 -f supabase/tests/restore_assertions.sql
+          original=$(psql -h localhost -U postgres -d avenlo_test -Atc "select count(*) from public.profiles; select count(*) from storage.objects; select count(*) from pg_policies;")
+          restored=$(psql -h localhost -U postgres -d avenlo_restore -Atc "select count(*) from public.profiles; select count(*) from storage.objects; select count(*) from pg_policies;")
+          test "$original" = "$restored"
+          echo "Synthetic data, policy definitions and access boundaries restored. This is not a production backup verification."
+
   authenticated-integration:
     needs: verify
     runs-on: ubuntu-latest

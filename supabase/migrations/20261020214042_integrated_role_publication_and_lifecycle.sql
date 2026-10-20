@@ -1,3 +1,8 @@
+-- Trusted backend writes also compile trigger expressions that reference this
+-- non-API helper. BYPASSRLS does not supply schema/function privileges.
+grant usage on schema private to service_role;
+grant execute on function private.current_user_role() to service_role;
+
 alter table public.jobs add column role_brief_id uuid references public.employer_role_briefs(id) on delete set null;
 alter table public.jobs add column role_brief_revision integer;
 alter table public.jobs add column role_definition_snapshot jsonb;

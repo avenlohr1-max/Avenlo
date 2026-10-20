@@ -43,3 +43,13 @@ trusted history, candidate isolation and absence of job publication.
 This PR stacks on Phase 3 PR #10. Existing Production backup/baseline/security,
 retention and combined synthetic-journey gates remain open. Engineering DONE is
 recorded only after the code checks and database regression workflow pass.
+
+## Integrated release update — 21 October 2026, 03:34 IST
+
+PR #12 adds the previously deferred publication bridge: approved definitions
+propose pending-review jobs, database-created definition snapshots reach the
+candidate role page after job approval, and definition corrections pause linked
+open jobs. Reviewer removal now clears references with a lifecycle revision.
+Those integration additions supersede the earlier limitations above and have
+their own combined SQL/Auth verification. Employer owner erasure, retention,
+representative-user acceptance and production gates remain outstanding.

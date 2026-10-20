@@ -194,7 +194,8 @@ begin
     new.created_at := now(); new.expires_at := now() + interval '30 days';
     if new.assigned_staff is not null or new.status <> 'requested' or new.staff_declaration is not null or new.resolution_note is not null then raise exception 'new cases require triage'; end if;
   elsif (select private.current_user_role()) = 'candidate' then
-    if new.assigned_staff is distinct from old.assigned_staff or new.status not in (old.status, 'closed') or new.staff_declaration is distinct from old.staff_declaration or new.resolution_note is distinct from old.resolution_note then raise exception 'candidate may withdraw or close a case'; end if;
+    if new.assigned_staff is distinct from old.assigned_staff or new.status not in (old.status, 'closed', 'escalated') or new.staff_declaration is distinct from old.staff_declaration or new.resolution_note is distinct from old.resolution_note then raise exception 'candidate may escalate, withdraw or close a case'; end if;
+    if old.status in ('completed','closed') and new.status = 'escalated' then raise exception 'request a new case for further review'; end if;
     if not old.consent and new.consent then raise exception 'request a new case to renew consent'; end if;
   else
     if new.consent is distinct from old.consent or new.assigned_staff <> auth.uid() then raise exception 'staff cannot manufacture consent'; end if;
@@ -266,12 +267,23 @@ begin
   if new.resolution_note is distinct from old.resolution_note or new.status is distinct from old.status then
     insert into public.intelligence_case_notes(case_id, author_id, kind, body)
     values (new.id, auth.uid(), case when new.status = 'escalated' then 'escalation' when new.status in ('completed','closed') then 'completion' else 'progress' end,
-      new.status || ': ' || coalesce(new.resolution_note, 'Candidate closed the case.'));
+      new.status || ': ' || case when new.status = 'escalated' and auth.uid() = new.candidate_id then 'Candidate requested founder review; see the shared escalation note.' else coalesce(new.resolution_note, 'Candidate closed the case.') end);
   end if;
   return new;
 end $$;
 revoke all on function private.record_service_progress() from public, anon, authenticated;
 create trigger record_service_progress after update on public.intelligence_cases for each row execute function private.record_service_progress();
+
+create function private.escalate_candidate_case() returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.kind = 'escalation' then
+    update public.intelligence_cases set status = 'escalated'
+    where id = new.case_id and candidate_id = auth.uid() and consent and expires_at > now() and status not in ('completed','closed','escalated');
+  end if;
+  return new;
+end $$;
+revoke all on function private.escalate_candidate_case() from public, anon, authenticated;
+create trigger escalate_candidate_case after insert on public.intelligence_case_notes for each row execute function private.escalate_candidate_case();
 
 create function private.guard_room_invitation() returns trigger language plpgsql security invoker set search_path = '' as $$
 begin

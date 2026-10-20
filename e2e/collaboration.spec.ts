@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
+import { execFileSync } from "node:child_process";
 
 test.describe("disposable authenticated suite", () => {
   test.skip(process.env.AVENLO_LOCAL_INTEGRATION !== "true", "Requires disposable local Auth/Storage containers; never Production or shared Preview");
@@ -12,7 +13,7 @@ test.describe("disposable authenticated suite", () => {
     await page.waitForURL(role === "staff" ? "**/staff" : role === "company" ? "**/company" : "**/dashboard");
   }
   test("candidate preview, employer conversation, dossier export, service consent and complete erasure", async ({ browser }) => {
-    test.setTimeout(180_000);
+    test.setTimeout(300_000);
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     expect(["127.0.0.1", "localhost"]).toContain(new URL(url).hostname);
     const candidateContext = await browser.newContext({ baseURL: "http://127.0.0.1:3000" });
@@ -83,12 +84,28 @@ test.describe("disposable authenticated suite", () => {
     await employer.goto(roomPath);
     await expect(employer.getByRole("heading", { name: /could not be found/i })).toBeVisible();
     expect((await employer.request.get(`${roomPath}/export`)).status()).toBe(404);
+    const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
+    const dbUrl = process.env.AVENLO_LOCAL_DB_URL!;
+    expect(["127.0.0.1", "localhost"]).toContain(new URL(dbUrl).hostname);
+    // Inject a real cleanup failure in the disposable DB only. No application
+    // fault switch or production test backdoor is introduced.
+    const sql = (statement: string) => execFileSync("psql", [dbUrl, "-v", "ON_ERROR_STOP=1", "-c", statement], { stdio: "pipe" });
+    sql("create function private.e2e_block_storage_delete() returns trigger language plpgsql as $$ begin raise exception 'synthetic cleanup failure'; end $$; create trigger e2e_block_storage_delete before delete on storage.objects for each row execute function private.e2e_block_storage_delete();");
+    try {
+      const failedDeletion = await candidate.request.delete("/api/candidate/account", { headers: { Origin: "http://127.0.0.1:3000" }, data: { confirmation: "DELETE", password: process.env.AVENLO_E2E_PASSWORD } });
+      expect(failedDeletion.status()).toBe(503);
+      expect((await admin.auth.admin.getUserById(candidateId)).data.user?.id).toBe(candidateId);
+      const retained = await admin.storage.from("candidate-documents").list(candidateId);
+      expect(retained.data?.some(item => item.name === "resume.pdf")).toBe(true);
+    } finally {
+      sql("drop trigger e2e_block_storage_delete on storage.objects; drop function private.e2e_block_storage_delete();");
+    }
+    await login(candidate, "candidate");
     await candidate.goto("/dashboard/account");
     await candidate.getByLabel("Current password").fill(process.env.AVENLO_E2E_PASSWORD!);
     await candidate.getByLabel("Type DELETE to confirm").fill("DELETE");
     await candidate.getByRole("button", { name: "Permanently delete my account" }).click();
     await candidate.waitForURL("**/login?account=deleted");
-    const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
     expect((await admin.auth.admin.getUserById(candidateId)).error).not.toBeNull();
     const objects = await admin.storage.from("candidate-documents").list(candidateId);
     expect(objects.error).toBeNull(); expect(objects.data).toHaveLength(0);

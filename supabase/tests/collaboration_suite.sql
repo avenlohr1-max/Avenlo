@@ -67,9 +67,16 @@ do $$ begin
   if exists(select 1 from public.decision_rooms) or exists(select 1 from public.proof_packages) then raise exception 'staff gained room access'; end if;
   if (select count(*) from public.intelligence_cases) <> 1 then raise exception 'consented triage unavailable'; end if;
 end $$;
-update public.intelligence_cases set assigned_staff = auth.uid(), status = 'escalated', staff_declaration = 'Scope reviewed; conflict escalated', resolution_note = 'Founder review requested';
+update public.intelligence_cases set assigned_staff = auth.uid(), status = 'in_progress', staff_declaration = 'Scope reviewed', resolution_note = 'Scoped discussion accepted';
 do $$ begin
-  if not exists(select 1 from public.intelligence_case_notes where kind = 'escalation') then raise exception 'case progress not recorded'; end if;
+  if not exists(select 1 from public.intelligence_case_notes where kind = 'progress') then raise exception 'case progress not recorded'; end if;
+end $$;
+reset role;
+select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001', true);
+set local role authenticated;
+insert into public.intelligence_case_notes(case_id,kind,body) values ('b2000000-0000-0000-0000-000000000001','escalation','Please ask a founder to review this scope');
+do $$ begin
+  if not exists(select 1 from public.intelligence_cases where status = 'escalated') then raise exception 'candidate escalation did not reach founder queue'; end if;
 end $$;
 reset role;
 select set_config('request.jwt.claim.sub', '40000000-0000-0000-0000-000000000001', true);

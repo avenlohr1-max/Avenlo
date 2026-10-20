@@ -21,8 +21,9 @@ Updated: 21 October 2026, 03:26 IST. Status: engineering checks in progress; pub
 
 1. Dependency and secret checks, lint, TypeScript, unit/action tests, production build and public browser smoke checks.
 2. Empty PostgreSQL replay of every legacy and new migration; complete existing RLS attack, erasure, opportunity and role-definition suites; integrated collaboration suite.
-3. Disposable local Supabase Auth/PostgREST/Storage journey: three role accounts, candidate invitation, private preview, employer access after approval, conversation, dossier export, service assignment and withdrawal, room withdrawal, password-confirmed erasure, Storage cleanup and stale-session write rejection.
+3. Disposable local Supabase Auth/PostgREST/Storage journey: three role accounts, candidate invitation, private preview, employer access after approval, conversation, dossier export, service assignment and withdrawal, room withdrawal, an injected Storage cleanup failure that preserves the account, reauthentication/retry, password-confirmed erasure, Storage cleanup and stale-session write rejection.
 4. Production readiness tracker cites the latest passing commit/run. Earlier green runs do not validate later changes.
+5. A synthetic database backup/restore drill verifies restored row counts, policies, candidate isolation, Storage privacy and restricted audit/function privileges. It validates the disposable tooling path; it is not evidence of an off-site production backup or production recovery timing.
 
 The disposable CI stack is a temporary test fixture, not a separate staging deployment. Its seed script refuses non-loopback URLs. No production secrets are needed. Duplicate historical migration prefixes are replayed explicitly only against an empty test database; this does not reconcile production migration history.
 

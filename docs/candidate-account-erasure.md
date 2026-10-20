@@ -56,6 +56,14 @@ not establish a legal retention schedule or claim that all external copies vanis
 
 ## Acceptance
 
+Integration update (21 October 2026, 03:53 IST): PR #12 changes the service-order
+candidate foreign key from CASCADE to RESTRICT. The database therefore blocks
+account removal if an order appears after the route's initial count check.
+This preserves both account and commercial records for support review rather
+than relying on a precheck during concurrent checkout. The disposable suite
+verifies this boundary. Production retention decisions and provider/support
+handling remain separate release gates.
+
 - Route tests cover disabled mode, cross-origin requests, malformed confirmation,
   expired sessions, wrong role/password, unexpected verifier identity, service
   orders, session-revocation errors, paginated/nested cleanup, Storage errors,

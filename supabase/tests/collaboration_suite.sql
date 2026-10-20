@@ -138,6 +138,19 @@ end $$;
 rollback;
 
 begin;
+select set_config('request.jwt.claim.sub', '', true);
+insert into public.candidate_service_orders(candidate_id,plan_id,market,price,currency)
+select '10000000-0000-0000-0000-000000000001',id,'india',0,'INR' from public.candidate_plans where market = 'india' and code = 'basic';
+do $$ begin
+  begin
+    delete from auth.users where id = '10000000-0000-0000-0000-000000000001';
+    raise exception 'service order cascaded during account erasure';
+  exception when foreign_key_violation then null; end;
+  if not exists(select 1 from auth.users where id = '10000000-0000-0000-0000-000000000001') or not exists(select 1 from public.candidate_service_orders where candidate_id = '10000000-0000-0000-0000-000000000001') then raise exception 'failed erasure did not preserve commercial records and account'; end if;
+end $$;
+rollback;
+
+begin;
 select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001', true);
 set local role authenticated;
 insert into public.decision_rooms(id,candidate_id,company_id,title,purpose) values('b6000000-0000-0000-0000-000000000001',auth.uid(),'50000000-0000-0000-0000-000000000001','Expiry fixture','Check expiry');

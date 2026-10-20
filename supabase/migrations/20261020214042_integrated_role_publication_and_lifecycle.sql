@@ -8,6 +8,12 @@ grant execute on function private.current_user_role() to service_role;
 drop policy if exists "candidates upload own resumes" on storage.objects;
 drop policy if exists "candidates update own resumes" on storage.objects;
 
+-- The API's order-count precheck is advisory. A concurrent checkout must not
+-- become a cascading deletion between that check and Auth account removal.
+alter table public.candidate_service_orders drop constraint candidate_service_orders_candidate_id_fkey;
+alter table public.candidate_service_orders add constraint candidate_service_orders_candidate_id_fkey
+  foreign key(candidate_id) references public.profiles(id) on delete restrict;
+
 drop policy if exists "candidates create own applications" on public.applications;
 drop policy if exists "candidates apply to open jobs" on public.applications;
 create policy "candidates create own applications" on public.applications for insert to authenticated with check (

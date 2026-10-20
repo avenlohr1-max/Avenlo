@@ -106,7 +106,37 @@ BEGIN
   GET DIAGNOSTICS n = ROW_COUNT;
   IF n <> 0 THEN RAISE EXCEPTION 'candidate changed application review status'; END IF;
 END
-$$;
+$;
+
+UPDATE public.candidate_profiles
+SET share_with_applicant_companies = false
+WHERE user_id = '10000000-0000-0000-0000-000000000001';
+DO $
+DECLARE n integer;
+BEGIN
+  SELECT count(*) INTO n FROM public.candidate_sharing_events
+  WHERE candidate_id = '10000000-0000-0000-0000-000000000001'
+    AND previous_value = true AND new_value = false;
+  IF n <> 1 THEN RAISE EXCEPTION 'candidate sharing withdrawal was not audited'; END IF;
+END
+$;
+
+RESET ROLE;
+SELECT set_config('request.jwt.claim.sub', '20000000-0000-0000-0000-000000000001', true);
+SET LOCAL ROLE authenticated;
+DO $
+DECLARE n integer;
+BEGIN
+  SELECT count(*) INTO n FROM public.profiles WHERE id = '10000000-0000-0000-0000-000000000001';
+  IF n <> 0 THEN RAISE EXCEPTION 'company retained profile access after sharing was withdrawn'; END IF;
+  SELECT count(*) INTO n FROM public.candidate_profiles WHERE user_id = '10000000-0000-0000-0000-000000000001';
+  IF n <> 0 THEN RAISE EXCEPTION 'company retained candidate record access after sharing was withdrawn'; END IF;
+  SELECT count(*) INTO n FROM public.candidate_skills WHERE user_id = '10000000-0000-0000-0000-000000000001';
+  IF n <> 0 THEN RAISE EXCEPTION 'company retained skill access after sharing was withdrawn'; END IF;
+  SELECT count(*) INTO n FROM storage.objects WHERE name = '10000000-0000-0000-0000-000000000001/resume.pdf';
+  IF n <> 0 THEN RAISE EXCEPTION 'company retained resume access after sharing was withdrawn'; END IF;
+END
+$;
 ROLLBACK;
 
 BEGIN;

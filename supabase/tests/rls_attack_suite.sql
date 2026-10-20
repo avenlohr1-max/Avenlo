@@ -56,7 +56,7 @@ WHERE (cs.user_id = '10000000-0000-0000-0000-000000000001' AND cs.skill = 'SQL' 
 BEGIN;
 SELECT set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001', true);
 SET LOCAL ROLE authenticated;
-DO $$
+DO $phase1$
 DECLARE
   n integer;
   blocked boolean;

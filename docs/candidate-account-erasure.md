@@ -24,7 +24,8 @@ are resolved. This PR does not enable it or apply Production changes.
    Auth deletion. Never delete Storage metadata using SQL.
 4. Hard-delete the Auth user. Existing database foreign keys cascade through the
    Talent Record, skills, education, applications, signals, correction history,
-   capability evidence, sharing history and (when Phase 2 is merged) scenarios.
+   capability evidence, sharing history, Phase 3 opportunity suggestions/private
+   decisions/evidence links and (when Phase 2 is merged) scenarios.
    Unexpected foreign-key or Storage-ownership constraints cause an error; they
    must be investigated, never bypassed.
 5. Clear browser/server session state and return to sign in.

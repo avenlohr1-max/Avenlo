@@ -81,6 +81,9 @@ using (
 );
 
 -- Applicant access policies added in migration 0016 also use the private helper.
+create index if not exists applications_candidate_job_idx
+on public.applications(candidate_id, job_id);
+
 drop policy if exists "companies read applicant profiles" on public.profiles;
 create policy "companies read applicant profiles"
 on public.profiles
@@ -187,6 +190,10 @@ begin
 end;
 $$;
 revoke all on function public.protect_company_application_review() from public, anon, authenticated;
+drop trigger if exists applications_protect_company_review on public.applications;
+create trigger applications_protect_company_review
+before update on public.applications
+for each row execute function public.protect_company_application_review();
 
 -- This helper is now used through the private schema from policies only.
 revoke all on function public.current_user_role() from public, anon, authenticated;

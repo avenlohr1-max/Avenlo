@@ -9,11 +9,11 @@ test.describe("disposable authenticated suite", () => {
     await page.goto(role === "staff" ? "/admin/login" : "/login");
     await page.getByLabel("Email", { exact: true }).fill(`avenlo-e2e-${role}@example.test`);
     await page.getByLabel("Password", { exact: true }).fill(process.env.AVENLO_E2E_PASSWORD!);
-    await page.getByRole("button", { name: /Sign in/ }).click();
-    await page.waitForURL(role === "staff" ? "**/staff" : role === "company" ? "**/company" : "**/dashboard");
+    await page.getByRole("button", { name: role === "staff" ? "Enter operations" : "Sign in", exact: true }).click({ timeout: 30_000 });
+    await page.waitForURL(role === "staff" ? "**/staff" : role === "company" ? "**/company" : "**/dashboard", { timeout: 30_000 });
   }
   test("candidate preview, employer conversation, dossier export, service consent and complete erasure", async ({ browser }) => {
-    test.setTimeout(300_000);
+    test.setTimeout(180_000);
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     expect(["127.0.0.1", "localhost"]).toContain(new URL(url).hostname);
     const candidateContext = await browser.newContext({ baseURL: "http://127.0.0.1:3000" });
@@ -37,7 +37,7 @@ test.describe("disposable authenticated suite", () => {
     await candidate.getByLabel("Purpose and boundaries").fill("Clarify reporting scope; share only approved evidence");
     await candidate.getByRole("checkbox").check();
     await candidate.getByRole("button", { name: "Create a 30-day room" }).click();
-    await candidate.waitForURL(/\/dashboard\/rooms\/[a-f0-9-]+$/);
+    await candidate.waitForURL(/\/dashboard\/rooms\/[a-f0-9-]+$/, { timeout: 30_000 });
     const roomPath = new URL(candidate.url()).pathname;
     await login(employer, "company");
     await employer.goto(roomPath);
@@ -88,7 +88,7 @@ test.describe("disposable authenticated suite", () => {
     await expect(staff.getByText("No service cases are available.")).toBeVisible();
     await candidate.goto(roomPath);
     await candidate.getByRole("button", { name: "Withdraw employer access now" }).click();
-    await candidate.waitForURL("**/dashboard/rooms?result=saved");
+    await candidate.waitForURL("**/dashboard/rooms?result=saved", { timeout: 30_000 });
     await employer.goto(roomPath);
     await expect(employer.getByRole("heading", { name: /could not be found/i })).toBeVisible();
     expect((await employer.request.get(`${roomPath}/export`)).status()).toBe(404);
@@ -97,7 +97,7 @@ test.describe("disposable authenticated suite", () => {
     expect(["127.0.0.1", "localhost"]).toContain(new URL(dbUrl).hostname);
     // Inject a real cleanup failure in the disposable DB only. No application
     // fault switch or production test backdoor is introduced.
-    const sql = (statement: string) => execFileSync("psql", [dbUrl, "-v", "ON_ERROR_STOP=1", "-c", statement], { stdio: "pipe" });
+    const sql = (statement: string) => execFileSync("psql", [dbUrl, "-v", "ON_ERROR_STOP=1", "-c", `set lock_timeout = '5s'; set statement_timeout = '10s'; ${statement}`], { stdio: "pipe", timeout: 20_000 });
     sql("create function private.e2e_block_storage_delete() returns trigger language plpgsql as $$ begin raise exception 'synthetic cleanup failure'; end $$; create trigger e2e_block_storage_delete before delete on storage.objects for each row execute function private.e2e_block_storage_delete();");
     try {
       const failedDeletion = await candidate.request.delete("/api/candidate/account", { headers: { Origin: "http://127.0.0.1:3000" }, data: { confirmation: "DELETE", password: process.env.AVENLO_E2E_PASSWORD } });
@@ -113,7 +113,7 @@ test.describe("disposable authenticated suite", () => {
     await candidate.getByLabel("Current password").fill(process.env.AVENLO_E2E_PASSWORD!);
     await candidate.getByLabel("Type DELETE to confirm").fill("DELETE");
     await candidate.getByRole("button", { name: "Permanently delete my account" }).click();
-    await candidate.waitForURL("**/login?account=deleted");
+    await candidate.waitForURL("**/login?account=deleted", { timeout: 60_000 });
     expect((await admin.auth.admin.getUserById(candidateId)).error).not.toBeNull();
     const objects = await admin.storage.from("candidate-documents").list(candidateId);
     expect(objects.error).toBeNull(); expect(objects.data).toHaveLength(0);

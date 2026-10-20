@@ -9,6 +9,8 @@ export default defineConfig({
   reporter: "line",
   use: {
     baseURL: "http://127.0.0.1:3000",
+    actionTimeout: 30_000,
+    navigationTimeout: 30_000,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",

@@ -20,7 +20,7 @@ This note describes the current Talent Record, Signal Ledger, and Capability Atl
 
 ## Release prerequisites still open
 
-- Add and verify a complete self-service account-erasure flow, including owned resume objects and related records, before real candidate use.
+- The self-service account-erasure implementation is in `docs/candidate-account-erasure.md`. Keep its server flag disabled until its migration, synthetic integrated journey, retention review and Production gates are resolved. Accounts with service orders require support review.
 - Define and publish retention periods, support-assisted deletion handling, and legal/privacy terms before inviting candidates.
 - Decide whether Talent Record field-level edit history or access-read auditing is needed for the first cohort.
 - Validate the consent language and withdrawal journey with candidate research.

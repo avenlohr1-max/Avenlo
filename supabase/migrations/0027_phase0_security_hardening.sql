@@ -214,7 +214,7 @@ begin
       else pg_catalog.regexp_replace(
         pg_catalog.replace(policy_row.qual, 'public.current_user_role()', 'private.current_user_role()'),
         '(^|[^.])current_user_role\(\)',
-        '\\1private.current_user_role()',
+        '\1private.current_user_role()',
         'g'
       )
     end;
@@ -223,7 +223,7 @@ begin
       else pg_catalog.regexp_replace(
         pg_catalog.replace(policy_row.with_check, 'public.current_user_role()', 'private.current_user_role()'),
         '(^|[^.])current_user_role\(\)',
-        '\\1private.current_user_role()',
+        '\1private.current_user_role()',
         'g'
       )
     end;

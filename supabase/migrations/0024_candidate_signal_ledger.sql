@@ -86,3 +86,31 @@ drop trigger if exists candidate_signals_record_revision on public.candidate_sig
 create trigger candidate_signals_record_revision
 before update on public.candidate_signals
 for each row execute function public.record_candidate_signal_revision();
+
+-- Capability Atlas associations connect a candidate's recorded skills to their own signals.
+create unique index if not exists candidate_skills_user_id_id_unique
+  on public.candidate_skills (user_id, id);
+create unique index if not exists candidate_signals_candidate_id_id_unique
+  on public.candidate_signals (candidate_id, id);
+
+create table if not exists public.candidate_capability_evidence (
+  candidate_id uuid not null references public.profiles(id) on delete cascade,
+  candidate_skill_id uuid not null,
+  signal_id uuid not null,
+  created_at timestamptz not null default now(),
+  primary key (candidate_id, candidate_skill_id, signal_id),
+  foreign key (candidate_id, candidate_skill_id)
+    references public.candidate_skills (user_id, id) on delete cascade,
+  foreign key (candidate_id, signal_id)
+    references public.candidate_signals (candidate_id, id) on delete cascade
+);
+
+alter table public.candidate_capability_evidence enable row level security;
+grant select, insert, delete on public.candidate_capability_evidence to authenticated;
+
+drop policy if exists "candidates manage own capability evidence links" on public.candidate_capability_evidence;
+create policy "candidates manage own capability evidence links"
+on public.candidate_capability_evidence
+for all to authenticated
+using (candidate_id = (select auth.uid()))
+with check (candidate_id = (select auth.uid()));

@@ -195,6 +195,53 @@ create trigger applications_protect_company_review
 before update on public.applications
 for each row execute function public.protect_company_application_review();
 
+-- Catch any additional policies from the live schema that still reference the
+-- old helper, so revoking its direct privileges cannot break policy evaluation.
+do $phase0$
+declare
+  policy_row record;
+  using_expression text;
+  check_expression text;
+  statement text;
+begin
+  for policy_row in
+    select schemaname, tablename, policyname, qual, with_check
+    from pg_catalog.pg_policies
+    where (coalesce(qual, '') || coalesce(with_check, '')) ~ '(public[.])?current_user_role\(\)'
+  loop
+    using_expression := case
+      when policy_row.qual is null then null
+      else pg_catalog.regexp_replace(
+        policy_row.qual,
+        '(public[.])?current_user_role\(\)',
+        'private.current_user_role()',
+        'g'
+      )
+    end;
+    check_expression := case
+      when policy_row.with_check is null then null
+      else pg_catalog.regexp_replace(
+        policy_row.with_check,
+        '(public[.])?current_user_role\(\)',
+        'private.current_user_role()',
+        'g'
+      )
+    end;
+    statement := pg_catalog.format(
+      'alter policy %I on %I.%I',
+      policy_row.policyname, policy_row.schemaname, policy_row.tablename
+    );
+    if using_expression is not null then
+      statement := statement || pg_catalog.format(' using (%s)', using_expression);
+    end if;
+    if check_expression is not null then
+      statement := statement || pg_catalog.format(' with check (%s)', check_expression);
+    end if;
+    execute statement;
+  end loop;
+end;
+$phase0$;
+
 -- This helper is now used through the private schema from policies only.
 revoke all on function public.current_user_role() from public, anon, authenticated;
 

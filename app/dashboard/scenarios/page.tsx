@@ -48,18 +48,22 @@ export default function CareerScenariosPage() {
     if (authError || !user) { window.location.assign("/login"); return; }
     setCandidateId(user.id);
     const [
+      { data: profile },
       { data: candidate, error: candidateError },
       { data: skillRows, error: skillsError },
       { data: signalRows, error: signalsError },
       { data: scenarioRows, error: scenariosError },
       { data: evidenceRows, error: evidenceError },
     ] = await Promise.all([
+      supabase.from("profiles").select("role").eq("id", user.id).maybeSingle(),
       supabase.from("candidate_profiles").select("preferences").eq("user_id", user.id).maybeSingle(),
       supabase.from("candidate_skills").select("skill").eq("user_id", user.id).order("skill"),
       supabase.from("candidate_signals").select("id, statement, source_label, source_type, source_date, context, uncertainty_note").eq("candidate_id", user.id).eq("verification_status", "candidate_confirmed").order("created_at", { ascending: false }),
       supabase.from("candidate_scenarios").select("id, candidate_id, target_role, assumptions, open_questions, next_steps, created_at, updated_at").eq("candidate_id", user.id).order("created_at"),
       supabase.from("candidate_scenario_evidence").select("scenario_id, signal_id").eq("candidate_id", user.id),
     ]);
+    if (profile?.role === "company") { window.location.assign("/company"); return; }
+    if (profile?.role === "staff" || profile?.role === "founder") { window.location.assign("/staff"); return; }
     if (candidateError || skillsError || signalsError || scenariosError || evidenceError) {
       setError("The Scenario Lab could not load. Check that the local database has the Phase 2 migration, then retry.");
       setLoading(false);
@@ -132,7 +136,7 @@ export default function CareerScenariosPage() {
       candidate_id: candidateId, scenario_id: scenario.id, signal_id: signalId,
     });
     if (linkError) setError(linkError.code === "23505" ? "That signal is already linked." : "Unable to link this signal.");
-    else { await load(); setMessage("Candidate-confirmed signal linked."); }
+    else { setSelectedSignals((current) => ({ ...current, [scenario.id]: "" })); await load(); setMessage("Candidate-confirmed signal linked."); }
     setBusy(false);
   }
 

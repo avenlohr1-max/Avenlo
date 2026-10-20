@@ -18,3 +18,11 @@ Roles are candidate-defined or come from the candidate's own Talent Record targe
 ## Validation before broader use
 
 Test whether three scenarios are enough, whether candidates can identify unsupported assumptions, and whether the evidence/unknowns/next-step structure helps them plan conversations or exploration. Do not interpret usage as validated career prediction or hiring suitability.
+
+## Acceptance checks
+
+- A signed-in candidate can add, edit, and delete at most three scenarios through the product UI.
+- Another candidate, a company, and an anonymous visitor cannot read the scenarios or evidence links.
+- Evidence links require a confirmed signal from the same candidate; changing the signal to needs-review or disputed removes the link.
+- Deleting a scenario removes its links. The candidate can still read and correct all scenario text.
+- The interface presents scenarios side by side without a score or recommendation order.

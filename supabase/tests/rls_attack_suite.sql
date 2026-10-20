@@ -35,7 +35,8 @@ INSERT INTO public.jobs (id, company_id, created_by, title, description, status)
 
 INSERT INTO public.applications (id, job_id, candidate_id, status) VALUES
   ('70000000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'submitted'),
-  ('70000000-0000-0000-0000-000000000002', '60000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002', 'submitted');
+  ('70000000-0000-0000-0000-000000000002', '60000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002', 'submitted'),
+  ('70000000-0000-0000-0000-000000000003', '60000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000003', 'submitted');
 
 INSERT INTO storage.objects (bucket_id, name, owner) VALUES
   ('candidate-documents', '10000000-0000-0000-0000-000000000001/resume.pdf', '10000000-0000-0000-0000-000000000001'),
@@ -117,17 +118,27 @@ BEGIN
   SELECT count(*) INTO n FROM public.applications WHERE id IN (
     '70000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000002'
   );
-  IF n <> 2 THEN RAISE EXCEPTION 'company could not read applicants for its role'; END IF;
+  IF n <> 3 THEN RAISE EXCEPTION 'company could not read all applicants for its role'; END IF;
   SELECT count(*) INTO n FROM public.candidate_signals WHERE candidate_id = '10000000-0000-0000-0000-000000000001';
   IF n <> 0 THEN RAISE EXCEPTION 'company read candidate-private Signal Ledger entries'; END IF;
   SELECT count(*) INTO n FROM public.candidate_capability_evidence WHERE candidate_id = '10000000-0000-0000-0000-000000000001';
   IF n <> 0 THEN RAISE EXCEPTION 'company read candidate-private capability evidence links'; END IF;
+  SELECT count(*) INTO n FROM public.profiles WHERE id = '10000000-0000-0000-0000-000000000001';
+  IF n <> 1 THEN RAISE EXCEPTION 'company could not read opted-in applicant profile'; END IF;
+  SELECT count(*) INTO n FROM public.profiles WHERE id = '10000000-0000-0000-0000-000000000002';
+  IF n <> 1 THEN RAISE EXCEPTION 'company could not read another opted-in applicant profile'; END IF;
+  SELECT count(*) INTO n FROM public.profiles WHERE id = '10000000-0000-0000-0000-000000000003';
+  IF n <> 0 THEN RAISE EXCEPTION 'company read profile after candidate opted out'; END IF;
   SELECT count(*) INTO n FROM public.candidate_profiles WHERE user_id = '10000000-0000-0000-0000-000000000001';
   IF n <> 1 THEN RAISE EXCEPTION 'company could not read applicant candidate record'; END IF;
   SELECT count(*) INTO n FROM public.candidate_profiles WHERE user_id = '10000000-0000-0000-0000-000000000003';
   IF n <> 0 THEN RAISE EXCEPTION 'company read a non-applicant candidate record'; END IF;
+  SELECT count(*) INTO n FROM public.candidate_skills WHERE user_id = '10000000-0000-0000-0000-000000000002';
+  IF n <> 1 THEN RAISE EXCEPTION 'company could not read opted-in applicant skill'; END IF;
+  SELECT count(*) INTO n FROM public.candidate_skills WHERE user_id = '10000000-0000-0000-0000-000000000003';
+  IF n <> 0 THEN RAISE EXCEPTION 'company read skill after candidate opted out'; END IF;
   SELECT count(*) INTO n FROM storage.objects WHERE name = '10000000-0000-0000-0000-000000000003/resume.pdf';
-  IF n <> 0 THEN RAISE EXCEPTION 'company read a non-applicant resume'; END IF;
+  IF n <> 0 THEN RAISE EXCEPTION 'company read a resume after candidate opted out'; END IF;
   SELECT count(*) INTO n FROM storage.objects WHERE name = '10000000-0000-0000-0000-000000000001/resume.pdf';
   IF n <> 1 THEN RAISE EXCEPTION 'company could not read applicant resume'; END IF;
 

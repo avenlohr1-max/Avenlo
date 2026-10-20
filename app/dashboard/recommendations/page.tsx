@@ -9,7 +9,7 @@ type Suggestion = { id: string; job_id: string | null; basis_field: string; cura
 type Decision = { opportunity_id: string; disposition: string; private_note: string };
 type Evidence = { opportunity_id: string; signal_id: string };
 
-export default async function OpportunityIntelligence({ searchParams }: { searchParams: Promise<{ result?: string }> }) {
+export default async function OpportunityIntelligence({ searchParams }: { searchParams: Promise<{ result?: string; view?: string }> }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -29,16 +29,22 @@ export default async function OpportunityIntelligence({ searchParams }: { search
   const evidence = (evidenceResult.data ?? []) as Evidence[];
   const signals = (signalResult.data ?? []) as OpportunitySignal[];
   const failed = suggestions.error || signalResult.error || decisionResult.error || evidenceResult.error;
-  const { result } = await searchParams;
+  const { result, view: requestedView } = await searchParams;
+  const view = requestedView === "dismissed" || requestedView === "all" ? requestedView : "active";
+  const visibleRows = rows.filter((row) => {
+    const dismissed = decisions.find((item) => item.opportunity_id === row.id)?.disposition === "dismissed";
+    return view === "all" || (view === "dismissed" ? dismissed : !dismissed);
+  });
 
   return <main className={styles.page}><div className={styles.container}>
     <nav className={styles.nav} aria-label="Opportunity workspace"><Link href="/dashboard">← Dashboard</Link><Link href="/dashboard/signals">Signal Ledger</Link><Link href="/dashboard/profile">Sharing settings</Link></nav>
     <header><span className={styles.eyebrow}>OPPORTUNITY INTELLIGENCE</span><h1>Explore the roles suggested for you.</h1><p>Review the role information, Avenlo’s reasoning and the evidence you choose to connect. A suggestion is a starting point for your decision.</p></header>
     <aside className={styles.notice}>Your notes, decisions and evidence links stay private to you. Receiving or saving a suggestion grants no employer access to your Talent Record. Manage access in <Link href="/dashboard/profile">sharing settings</Link>.</aside>
+    <nav className={styles.nav} aria-label="Suggestion views"><Link href="/dashboard/recommendations" aria-current={view === "active" ? "page" : undefined}>Active</Link><Link href="/dashboard/recommendations?view=dismissed" aria-current={view === "dismissed" ? "page" : undefined}>Dismissed</Link><Link href="/dashboard/recommendations?view=all" aria-current={view === "all" ? "page" : undefined}>All suggestions</Link></nav>
     {result && <p role={result === "saved" ? "status" : "alert"}>{result === "saved" ? "Your private opportunity workspace has been updated." : "The change could not be saved. Check your inputs; evidence must still be candidate-confirmed."}</p>}
-    {failed ? <p role="alert">Unable to load your opportunity workspace. Refresh to try again; your saved choices have not been replaced.</p> : !rows.length ? <section className={styles.card}><h2>No suggestions yet</h2><p>When Avenlo suggests a role, you can review it here. You can prepare by reviewing your Talent Record and confirming evidence in your Signal Ledger.</p><Link href="/dashboard/signals">Review your signals →</Link></section> : <>
-      <p className={styles.meta}>Latest {rows.length} suggestions, newest first. Evidence choices use your latest {signals.length} ledger entries.</p>
-      {rows.map((row) => {
+    {failed ? <p role="alert">Unable to load your opportunity workspace. Refresh to try again; your saved choices have not been replaced.</p> : !visibleRows.length ? <section className={styles.card}><h2>{rows.length ? "No suggestions in this view" : "No suggestions yet"}</h2><p>{rows.length ? "Your saved decisions remain available. Switch to All suggestions to review or restore a dismissed role." : "When Avenlo suggests a role, you can review it here. You can prepare by reviewing your Talent Record and confirming evidence in your Signal Ledger."}</p><Link href="/dashboard/signals">Review your signals →</Link></section> : <>
+      <p className={styles.meta}>Showing {visibleRows.length} of your latest {rows.length} suggestions, newest first. Evidence choices use your latest {signals.length} ledger entries.</p>
+      {visibleRows.map((row) => {
         const role = Array.isArray(row.jobs) ? row.jobs[0] ?? null : row.jobs;
         const decision = decisions.find((item) => item.opportunity_id === row.id);
         const links = evidence.filter((item) => item.opportunity_id === row.id);

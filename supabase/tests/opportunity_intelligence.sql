@@ -14,6 +14,14 @@ begin
     raise exception 'operations suggested a draft role';
   exception when insufficient_privilege then null;
   end;
+  update public.jobs set expires_at = now() - interval '1 day' where id = '60000000-0000-0000-0000-000000000001';
+  begin
+    insert into public.candidate_opportunities (candidate_id, job_id, curator_id, basis_field, curator_note)
+    values ('10000000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', 'title', 'Expired role must be rejected.');
+    raise exception 'operations suggested an expired role';
+  exception when insufficient_privilege then null;
+  end;
+  update public.jobs set expires_at = null where id = '60000000-0000-0000-0000-000000000001';
   begin
     insert into public.candidate_opportunities (candidate_id, job_id, curator_id, basis_field, curator_note)
     values ('10000000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000001', 'title', 'Forged curator.');

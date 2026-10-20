@@ -1,5 +1,8 @@
 -- Human-curated role suggestions. Candidate decisions and evidence remain in
 -- separate private tables; curators cannot read those through the Data API.
+-- Role pages already use this field, but legacy migrations did not define it.
+alter table public.jobs add column if not exists expires_at timestamptz;
+
 create table public.candidate_opportunities (
   id uuid primary key default gen_random_uuid(),
   candidate_id uuid not null references public.profiles(id) on delete cascade,

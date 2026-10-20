@@ -8,12 +8,16 @@ Each suggestion shows its dated human curator note and the selected employer
 role field behind it. The employer role fields are current source information;
 the curator note is explicitly human judgment, not verified candidate suitability.
 
+The staff form previews the selected employer role and its fields before curation.
 Candidates can inspect current employer requirements, save/dismiss/restore a
 suggestion, record private corrections and open questions, and link or remove
 their own candidate-confirmed Signal Ledger entries. Linked evidence preserves
 its source, date, context and uncertainty. Unreviewed resume extraction and
 disputed/withdrawn confirmations are not displayed as evidence. Confirmation
 does not establish employer verification or proficiency.
+
+Dismissed suggestions leave the default Active view. Candidates can revisit the
+Dismissed or All view and restore them without losing their private notes.
 
 Suggestions are newest first without fit scores, ranking or automatic matching.
 The latest 50 suggestions and 200 ledger entries are shown; older or unavailable

@@ -116,7 +116,8 @@ DO $$
 DECLARE n integer;
 BEGIN
   SELECT count(*) INTO n FROM public.applications WHERE id IN (
-    '70000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000002'
+    '70000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000002',
+    '70000000-0000-0000-0000-000000000003'
   );
   IF n <> 3 THEN RAISE EXCEPTION 'company could not read all applicants for its role'; END IF;
   SELECT count(*) INTO n FROM public.candidate_signals WHERE candidate_id = '10000000-0000-0000-0000-000000000001';
@@ -132,7 +133,7 @@ BEGIN
   SELECT count(*) INTO n FROM public.candidate_profiles WHERE user_id = '10000000-0000-0000-0000-000000000001';
   IF n <> 1 THEN RAISE EXCEPTION 'company could not read applicant candidate record'; END IF;
   SELECT count(*) INTO n FROM public.candidate_profiles WHERE user_id = '10000000-0000-0000-0000-000000000003';
-  IF n <> 0 THEN RAISE EXCEPTION 'company read a non-applicant candidate record'; END IF;
+  IF n <> 0 THEN RAISE EXCEPTION 'company read a candidate record after the candidate opted out'; END IF;
   SELECT count(*) INTO n FROM public.candidate_skills WHERE user_id = '10000000-0000-0000-0000-000000000002';
   IF n <> 1 THEN RAISE EXCEPTION 'company could not read opted-in applicant skill'; END IF;
   SELECT count(*) INTO n FROM public.candidate_skills WHERE user_id = '10000000-0000-0000-0000-000000000003';

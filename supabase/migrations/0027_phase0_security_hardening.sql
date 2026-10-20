@@ -207,23 +207,23 @@ begin
   for policy_row in
     select schemaname, tablename, policyname, qual, with_check
     from pg_catalog.pg_policies
-    where (coalesce(qual, '') || coalesce(with_check, '')) ~ '(public[.])?current_user_role\(\)'
+    where (coalesce(qual, '') || coalesce(with_check, '')) ~ '(^|[^.])current_user_role\(\)|public[.]current_user_role\(\)'
   loop
     using_expression := case
       when policy_row.qual is null then null
       else pg_catalog.regexp_replace(
-        policy_row.qual,
-        '(public[.])?current_user_role\(\)',
-        'private.current_user_role()',
+        pg_catalog.replace(policy_row.qual, 'public.current_user_role()', 'private.current_user_role()'),
+        '(^|[^.])current_user_role\(\)',
+        '\\1private.current_user_role()',
         'g'
       )
     end;
     check_expression := case
       when policy_row.with_check is null then null
       else pg_catalog.regexp_replace(
-        policy_row.with_check,
-        '(public[.])?current_user_role\(\)',
-        'private.current_user_role()',
+        pg_catalog.replace(policy_row.with_check, 'public.current_user_role()', 'private.current_user_role()'),
+        '(^|[^.])current_user_role\(\)',
+        '\\1private.current_user_role()',
         'g'
       )
     end;

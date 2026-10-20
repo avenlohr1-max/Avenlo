@@ -16,7 +16,7 @@
 
 The Supabase connection exposes one active project, `supabase-apricot-battery`, ref `yzuuutynqfpbiozlrfmy`, in ap-south-1. Read-only inspection found Avenlo's core public tables: profiles, candidate_profiles, candidate_skills, companies, jobs, and applications. The project therefore contains Avenlo's application schema.
 
-The database has no `supabase_migrations` schema or recorded migration history available through the Supabase migration listing. The application schema may have been created outside the repository's migration history. This connection is likely Avenlo's app database, but the Vercel environment mapping is not exposed in the connected tools and remains to be confirmed.
+The database has no `supabase_migrations` schema or recorded migration history available through the Supabase migration listing. The application schema may have been created outside the repository's migration history. The founder confirmed this connected project is Avenlo's Supabase project. The exact Vercel Production and Preview environment mapping to this project remains to be confirmed.
 
 No migration was applied during this review.
 

@@ -50,6 +50,22 @@ DECLARE
   n integer;
   blocked boolean;
 BEGIN
+  IF private.current_user_role() <> 'candidate'::public.user_role THEN
+    RAISE EXCEPTION 'private role helper did not identify the authenticated candidate';
+  END IF;
+  IF has_function_privilege('anon', 'public.current_user_role()', 'EXECUTE')
+     OR has_function_privilege('authenticated', 'public.current_user_role()', 'EXECUTE') THEN
+    RAISE EXCEPTION 'public role helper remains directly executable';
+  END IF;
+  IF has_function_privilege('anon', 'public.handle_new_user()', 'EXECUTE')
+     OR has_function_privilege('authenticated', 'public.handle_new_user()', 'EXECUTE') THEN
+    RAISE EXCEPTION 'auth profile trigger function remains directly executable';
+  END IF;
+  IF has_function_privilege('anon', 'public.protect_company_application_review()', 'EXECUTE')
+     OR has_function_privilege('authenticated', 'public.protect_company_application_review()', 'EXECUTE') THEN
+    RAISE EXCEPTION 'application protection trigger function remains directly executable';
+  END IF;
+
   SELECT count(*) INTO n FROM public.profiles WHERE id = '10000000-0000-0000-0000-000000000002';
   IF n <> 0 THEN RAISE EXCEPTION 'candidate read another candidate profile'; END IF;
   SELECT count(*) INTO n FROM public.candidate_profiles WHERE user_id = '10000000-0000-0000-0000-000000000002';

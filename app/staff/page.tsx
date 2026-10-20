@@ -8,6 +8,8 @@ import { ApplicationReview } from "./application-review";
 import { ProfileStatusControl } from "./profile-status-control";
 import { ReportStatusControl } from "./report-status-control";
 import { SignOutButton } from "@/app/components/sign-out-button";
+import { RoleBriefView } from "@/app/components/role-brief-view";
+import { type RoleDefinition } from "@/lib/role-definition";
 
 type CompanyRelation = { name?: string } | Array<{ name?: string }> | null;
 
@@ -43,7 +45,7 @@ export default async function StaffWorkspace() {
     supabase.from("profiles").select("id, full_name, email, role, status, created_at").order("created_at", { ascending: false }).limit(100),
     supabase.from("profiles").select("id, full_name, headline, location, status").eq("role", "candidate").order("created_at", { ascending: false }).limit(50),
     supabase.from("companies").select("id, name, industry, location, owner_id, created_at").order("created_at", { ascending: false }).limit(50),
-    supabase.from("jobs").select("id, title, status, company_id, expires_at, companies(name)").order("created_at", { ascending: false }).limit(50),
+    supabase.from("jobs").select("id, title, description, status, company_id, expires_at, role_brief_revision, role_definition_snapshot, companies(name)").order("created_at", { ascending: false }).limit(50),
     supabase.from("applications").select("id, candidate_id, job_id, status, match_score, created_at").order("created_at", { ascending: false }).limit(50),
     supabase.from("moderation_reports").select("id, reporter_id, target_type, target_id, reason, status, created_at").order("created_at", { ascending: false }).limit(50),
     supabase.from("audit_logs").select("id, actor_id, action, entity_type, entity_id, metadata, created_at").order("created_at", { ascending: false }).limit(50),
@@ -169,7 +171,7 @@ export default async function StaffWorkspace() {
                 const companyName = Array.isArray(companiesRelation) ? companiesRelation[0]?.name : companiesRelation?.name;
                 return <article className="ops-list-item ops-list-item--action" key={job.id}>
                   <span className="ops-icon">↗</span>
-                  <div><strong>{job.title}</strong><p>{companyName || "Company"}</p>{job.expires_at ? <small>Expires {new Date(job.expires_at).toLocaleDateString()}</small> : null}</div>
+                  <div><strong>{job.title}</strong><p>{companyName || "Company"}</p>{job.expires_at ? <small>Expires {new Date(job.expires_at).toLocaleDateString()}</small> : null}<details><summary>Review role content{job.role_brief_revision ? ` · Definition revision ${job.role_brief_revision}` : ""}</summary>{job.role_definition_snapshot ? <RoleBriefView definition={job.role_definition_snapshot as RoleDefinition} /> : <p>{job.description}</p>}</details></div>
                   <div className="ops-item-action"><span className={`ops-pill ops-pill--${job.status}`}>{job.status}</span><JobModeration jobId={job.id} status={job.status} /></div>
                 </article>;
               })}

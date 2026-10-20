@@ -133,7 +133,6 @@ jobs:
           echo "Synthetic data, policy definitions and access boundaries restored. This is not a production backup verification."
 
   authenticated-integration:
-    needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -187,3 +186,6 @@ jobs:
       - name: Stop disposable containers
         if: always()
         run: npx --yes supabase@2.121.0 stop --no-backup
+      - name: Show synthetic browser failure context
+        if: failure()
+        run: find test-results -name error-context.md -exec cat {} \;

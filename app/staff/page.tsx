@@ -68,6 +68,7 @@ export default async function StaffWorkspace() {
               <b>{current?.role === "founder" ? "Founder" : "Staff"}</b>
             </div>
             <Link className="ops-header__link" href="/dashboard">Candidate view</Link>
+            <Link className="ops-header__link" href="/staff/opportunities">Curate opportunities</Link>
             <SignOutButton />
           </div>
         </div>

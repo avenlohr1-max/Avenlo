@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main", "feature/avenlo-production"]
   pull_request:
-    branches: ["main", "product/talent-record-sharing"]
+    branches: ["main", "product/talent-record-sharing", "fix/candidate-account-erasure"]
 
 permissions:
   contents: read
@@ -102,3 +102,8 @@ jobs:
         env:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/account_erasure.sql
+
+      - name: Verify opportunity curation, private decisions and confirmed evidence
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/opportunity_intelligence.sql

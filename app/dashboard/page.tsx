@@ -41,8 +41,8 @@ export default async function Dashboard() {
           <nav className={styles.nav} aria-label="Candidate navigation">
             <Link className={styles.activeNav} href="/dashboard">Overview</Link>
             <Link href="/dashboard/profile">My profile</Link>
-            <Link href="/dashboard/recommendations">Recommendations</Link>
-            <Link href="/dashboard/applications">My opportunities</Link>
+            <Link href="/dashboard/recommendations">Opportunities</Link>
+            <Link href="/dashboard/applications">My applications</Link>
             <SignOutButton />
           </nav>
         </div>
@@ -58,14 +58,14 @@ export default async function Dashboard() {
               <p>Build a stronger career signal once. Avenlo uses it to understand your strengths, recommend learning and surface relevant opportunities for you.</p>
               <div className={styles.heroActions}>
                 <Link className="btn btn--primary" href="/dashboard/profile">{completion < 100 ? "Complete my profile" : "Review my profile"}</Link>
-                <Link className="btn" href="/dashboard/recommendations">See how recommendations work</Link>
+                <Link className="btn" href="/dashboard/recommendations">Review opportunities</Link>
                 <Link className="btn" href="/pricing">View Avenlo services</Link>
               </div>
             </div>
             <div className={styles.readiness}>
               <div className={styles.readinessTop}><span>PROFILE READINESS</span><strong>{completion}%</strong></div>
               <div className={styles.progress}><span style={{ width: `${completion}%` }} /></div>
-              <p>{ready ? "Your profile has enough signal for meaningful Avenlo recommendations." : "A few more details will make Avenlo's recommendations more useful."}</p>
+              <p>{ready ? "Review your record and keep its details accurate before sharing." : "Add missing details and correct your record before sharing."}</p>
               <Link href="/dashboard/profile">{ready ? "Review your profile →" : "Finish your profile →"}</Link>
             </div>
           </div>
@@ -110,9 +110,9 @@ export default async function Dashboard() {
             <div className={styles.panelTop}><div><span className={styles.eyebrow}>RECOMMENDATIONS</span><h2>We bring opportunities to you.</h2></div><span className={styles.badge}>NO JOB BOARD</span></div>
             <div className={styles.recommendationBox}>
               <div className={styles.recommendationIcon}>A</div>
-              <div><h3>Avenlo works behind the scenes.</h3><p>We use your profile, resume and skills to identify relevant opportunities. You do not need to browse jobs or manage applications here.</p><div className={styles.chips}><span>Understand</span><span>Recommend</span><span>Connect</span></div></div>
+              <div><h3>Review suggestions on your terms.</h3><p>Explore role information and Avenlo’s reasoning, link evidence you have confirmed, and keep private notes before choosing your next step.</p><div className={styles.chips}><span>Review</span><span>Question</span><span>Choose</span></div></div>
             </div>
-            <Link className={styles.textLink} href="/dashboard/recommendations">Explore the recommendation workflow →</Link>
+            <Link className={styles.textLink} href="/dashboard/recommendations">Open Opportunity Intelligence →</Link>
           </article>
           <aside className={styles.panel}>
             <span className={styles.eyebrow}>PROFILE SIGNAL</span><h2>What Avenlo knows</h2>

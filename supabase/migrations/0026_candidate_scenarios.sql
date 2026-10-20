@@ -73,6 +73,30 @@ on public.candidate_scenario_evidence
 for delete to authenticated
 using (candidate_id = (select auth.uid()));
 
+-- A signal that is no longer candidate-confirmed must stop counting as scenario evidence.
+create or replace function public.remove_unconfirmed_candidate_scenario_evidence()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $phase2$
+begin
+  if old.verification_status is distinct from new.verification_status
+     and new.verification_status <> 'candidate_confirmed' then
+    delete from public.candidate_scenario_evidence
+    where candidate_id = new.candidate_id and signal_id = new.id;
+  end if;
+  return new;
+end;
+$phase2$;
+
+revoke all on function public.remove_unconfirmed_candidate_scenario_evidence() from public, anon, authenticated;
+
+drop trigger if exists candidate_signals_remove_unconfirmed_scenario_evidence on public.candidate_signals;
+create trigger candidate_signals_remove_unconfirmed_scenario_evidence
+after update of verification_status on public.candidate_signals
+for each row execute function public.remove_unconfirmed_candidate_scenario_evidence();
+
 create or replace function public.touch_candidate_scenario_updated_at()
 returns trigger
 language plpgsql

@@ -4,6 +4,8 @@ create table public.decision_rooms (
   id uuid primary key default gen_random_uuid(),
   candidate_id uuid not null references public.profiles(id) on delete cascade,
   company_id uuid not null references public.companies(id) on delete cascade,
+  candidate_label text not null default 'Candidate' check (length(btrim(candidate_label)) between 1 and 120),
+  company_label text not null default '' check (length(btrim(company_label)) between 1 and 300),
   title text not null check (length(btrim(title)) between 1 and 160),
   purpose text not null check (length(btrim(purpose)) between 1 and 2000),
   active boolean not null default true,
@@ -49,6 +51,12 @@ create policy "participants append conversation" on public.room_messages for ins
 );
 
 -- A proof item is an explicitly edited snapshot. Sharing never grants ledger access.
+alter table public.candidate_signals add column revision integer not null default 1;
+create function private.increment_signal_revision() returns trigger language plpgsql security invoker set search_path = '' as $$
+begin new.revision := old.revision + 1; return new; end $$;
+revoke all on function private.increment_signal_revision() from public, anon, authenticated;
+create trigger a_increment_signal_revision before update on public.candidate_signals for each row execute function private.increment_signal_revision();
+
 create table public.proof_packages (
   id uuid primary key default gen_random_uuid(),
   candidate_id uuid not null references public.profiles(id) on delete cascade,
@@ -63,6 +71,7 @@ create table public.proof_packages (
   redaction_note text not null check (length(btrim(redaction_note)) between 1 and 1000),
   shared boolean not null default false,
   source_updated_at timestamptz not null default now(),
+  source_revision integer not null default 1,
   source_fingerprint text not null default '',
   captured_at timestamptz not null default now(),
   unique(id, room_id),
@@ -88,12 +97,13 @@ create policy "recipient sees exact shared snapshot" on public.proof_packages fo
 );
 
 create function private.guard_proof_snapshot() returns trigger language plpgsql security invoker set search_path = '' as $$
-declare source_time timestamptz; source_hash text;
+declare source_time timestamptz; source_hash text; source_version integer;
 begin
   if tg_op = 'INSERT' or new.shared then
-    select s.updated_at, encode(sha256(convert_to(to_jsonb(s)::text, 'UTF8')), 'hex') into source_time, source_hash from public.candidate_signals s where s.id = new.signal_id and s.candidate_id = auth.uid() and s.verification_status = 'candidate_confirmed';
+    select s.updated_at, encode(sha256(convert_to(to_jsonb(s)::text, 'UTF8')), 'hex'), s.revision into source_time, source_hash, source_version from public.candidate_signals s where s.id = new.signal_id and s.candidate_id = auth.uid() and s.verification_status = 'candidate_confirmed' for share;
     if source_time is null then raise exception 'confirmed own signal required'; end if;
     if tg_op = 'INSERT' then
+      if new.source_revision is distinct from source_version then raise exception 'source changed; reload before preparing a snapshot'; end if;
       new.source_updated_at := source_time; new.source_fingerprint := source_hash; new.captured_at := now(); new.shared := false;
     elsif source_hash is distinct from old.source_fingerprint then raise exception 'source changed; prepare a new snapshot'; end if;
   end if;
@@ -287,7 +297,10 @@ create trigger escalate_candidate_case after insert on public.intelligence_case_
 
 create function private.guard_room_invitation() returns trigger language plpgsql security invoker set search_path = '' as $$
 begin
-  if tg_op = 'INSERT' then new.created_at := now(); new.expires_at := now() + interval '30 days';
+  if tg_op = 'INSERT' then
+    select left(name,300) into new.company_label from public.companies where id = new.company_id;
+    if new.company_label is null then raise exception 'an accessible employer is required'; end if;
+    new.created_at := now(); new.expires_at := now() + interval '30 days';
   elsif not old.active and new.active then raise exception 'create a new invitation to renew consent'; end if;
   return new;
 end $$;

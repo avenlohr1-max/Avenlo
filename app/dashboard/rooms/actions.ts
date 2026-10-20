@@ -11,7 +11,7 @@ export async function createRoom(form: FormData) {
   if (!parsed.success) redirect("/dashboard/rooms?result=invalid");
   const { data: job, error: lookupError } = await supabase.from("jobs").select("company_id, status, expires_at").eq("id", parsed.data.jobId).eq("status", "open").maybeSingle();
   if (lookupError || !job || (job.expires_at && new Date(job.expires_at).getTime() <= Date.now())) redirect("/dashboard/rooms?result=unavailable");
-  const { data, error } = await supabase.from("decision_rooms").insert({ candidate_id: user.id, company_id: job.company_id, title: parsed.data.title, purpose: parsed.data.purpose }).select("id").single();
+  const { data, error } = await supabase.from("decision_rooms").insert({ candidate_id: user.id, company_id: job.company_id, candidate_label: parsed.data.candidateLabel, title: parsed.data.title, purpose: parsed.data.purpose }).select("id").single();
   if (error || !data) redirect("/dashboard/rooms?result=error");
   revalidatePath("/dashboard/rooms"); redirect(`/dashboard/rooms/${data.id}`);
 }

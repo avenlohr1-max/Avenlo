@@ -3,6 +3,13 @@
 grant usage on schema private to service_role;
 grant execute on function private.current_user_role() to service_role;
 
+drop policy if exists "candidates create own applications" on public.applications;
+create policy "candidates create own applications" on public.applications for insert to authenticated with check (
+  candidate_id = (select auth.uid()) and (select private.current_user_role()) = 'candidate'
+  and status = 'submitted' and match_score is null and match_explanation = '{}'::jsonb
+  and exists(select 1 from public.jobs j where j.id = job_id and j.status = 'open' and (j.expires_at is null or j.expires_at > now()))
+);
+
 alter table public.jobs add column role_brief_id uuid references public.employer_role_briefs(id) on delete set null;
 alter table public.jobs add column role_brief_revision integer;
 alter table public.jobs add column role_definition_snapshot jsonb;
@@ -12,8 +19,9 @@ create function private.link_reviewed_role_definition() returns trigger language
 declare brief public.employer_role_briefs;
 begin
   if new.role_brief_id is not null then
-    select * into brief from public.employer_role_briefs where id = new.role_brief_id and company_id = new.company_id and status = 'approved';
+    select * into brief from public.employer_role_briefs where id = new.role_brief_id and company_id = new.company_id and status = 'approved' for share;
     if brief.id is null then raise exception 'an approved definition owned by this company is required'; end if;
+    if tg_op = 'INSERT' and new.role_brief_revision is distinct from brief.revision then raise exception 'role revision changed; reload before proposing'; end if;
     new.role_brief_revision := brief.revision;
     new.role_definition_snapshot := jsonb_build_object('title',brief.title,'summary',brief.summary,'outcomes',brief.outcomes,'essential',brief.essential,'preferred',brief.preferred,'location',brief.location,'work_mode',brief.work_mode);
   else

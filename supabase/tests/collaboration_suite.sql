@@ -94,6 +94,11 @@ do $$ begin
     update public.proof_packages set shared = true;
     raise exception 'stale snapshot reshared';
   exception when raise_exception then if sqlerrm = 'stale snapshot reshared' then raise; end if; end;
+  begin
+    insert into public.proof_packages(candidate_id,signal_id,source_revision,title,statement,source_label,context,uncertainty_note,redaction_note)
+    values(auth.uid(),'80000000-0000-0000-0000-000000000003',1,'Stale form','Old statement','Source','Context','Unknown','None');
+    raise exception 'stale proof preparation accepted';
+  exception when raise_exception then if sqlerrm = 'stale proof preparation accepted' then raise; end if; end;
 end $$;
 reset role;
 select set_config('request.jwt.claim.sub', '20000000-0000-0000-0000-000000000001', true);
@@ -133,6 +138,34 @@ end $$;
 rollback;
 
 begin;
+select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001', true);
+set local role authenticated;
+insert into public.decision_rooms(id,candidate_id,company_id,title,purpose) values('b6000000-0000-0000-0000-000000000001',auth.uid(),'50000000-0000-0000-0000-000000000001','Expiry fixture','Check expiry');
+reset role;
+select set_config('request.jwt.claim.sub', '', true);
+update public.decision_rooms set created_at = now() - interval '31 days', expires_at = now() - interval '1 day' where id = 'b6000000-0000-0000-0000-000000000001';
+update public.jobs set expires_at = now() - interval '1 day' where id = '60000000-0000-0000-0000-000000000003';
+select set_config('request.jwt.claim.sub', '20000000-0000-0000-0000-000000000001', true);
+set local role authenticated;
+do $$ begin
+  if exists(select 1 from public.decision_rooms where id = 'b6000000-0000-0000-0000-000000000001') then raise exception 'employer retained expired room'; end if;
+end $$;
+reset role;
+select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001', true);
+set local role authenticated;
+do $$ begin
+  begin
+    insert into public.room_messages(room_id,kind,body) values('b6000000-0000-0000-0000-000000000001','question','After expiry');
+    raise exception 'expired room message accepted';
+  exception when insufficient_privilege then null; end;
+  begin
+    insert into public.applications(job_id,candidate_id) values('60000000-0000-0000-0000-000000000003',auth.uid());
+    raise exception 'expired application accepted';
+  exception when insufficient_privilege then null; end;
+end $$;
+rollback;
+
+begin;
 select set_config('request.jwt.claim.sub', '20000000-0000-0000-0000-000000000001', true);
 set local role authenticated;
 insert into public.employer_role_briefs(id,company_id,created_by,title,summary,outcomes,essential,status)
@@ -144,8 +177,8 @@ update public.employer_role_briefs set status = 'approved', review_note = 'Scope
 reset role;
 select set_config('request.jwt.claim.sub', '20000000-0000-0000-0000-000000000001', true);
 set local role authenticated;
-insert into public.jobs(id,company_id,created_by,title,description,status,role_brief_id,role_definition_snapshot)
-values ('b4000000-0000-0000-0000-000000000001','50000000-0000-0000-0000-000000000001',auth.uid(),'Reporting analyst','Maintain reporting','open','b3000000-0000-0000-0000-000000000001','{"forged":true}');
+insert into public.jobs(id,company_id,created_by,title,description,status,role_brief_id,role_brief_revision,role_definition_snapshot)
+values ('b4000000-0000-0000-0000-000000000001','50000000-0000-0000-0000-000000000001',auth.uid(),'Reporting analyst','Maintain reporting','open','b3000000-0000-0000-0000-000000000001',2,'{"forged":true}');
 do $$ begin
   if exists(select 1 from public.jobs where id = 'b4000000-0000-0000-0000-000000000001' and (status <> 'pending_review' or role_brief_revision <> 2 or role_definition_snapshot ? 'forged')) then raise exception 'definition bridge bypassed review or trusted snapshot'; end if;
 end $$;

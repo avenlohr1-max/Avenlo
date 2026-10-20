@@ -36,6 +36,8 @@ export default async function CandidateJobDetails({ params }: { params: Promise<
     .from("jobs")
     .select("id, title, description, location, work_mode, seniority, experience_years, expires_at, role_definition_snapshot, role_brief_revision, companies(name)")
     .eq("id", id)
+    .eq("status", "open")
+    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
     .maybeSingle();
 
   if (!job) notFound();

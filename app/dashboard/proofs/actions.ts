@@ -9,10 +9,10 @@ export async function prepareProof(form: FormData) {
   const { supabase, user } = await collaborationContext(["candidate"]);
   const parsed = proofSchema.safeParse(Object.fromEntries(form));
   if (!parsed.success) redirect("/dashboard/proofs?result=invalid");
-  const { signalId, roomId, ...snapshot } = parsed.data;
+  const { signalId, sourceRevision, roomId, ...snapshot } = parsed.data;
   const { data: signal, error: sourceError } = await supabase.from("candidate_signals").select("id").eq("id", signalId).eq("candidate_id", user.id).eq("verification_status", "candidate_confirmed").maybeSingle();
   if (sourceError || !signal) redirect("/dashboard/proofs?result=unavailable");
-  const { data, error } = await supabase.from("proof_packages").insert({ ...snapshot, source_date: snapshot.source_date || null, candidate_id: user.id, signal_id: signalId, room_id: roomId || null, shared: false }).select("id").single();
+  const { data, error } = await supabase.from("proof_packages").insert({ ...snapshot, source_revision: sourceRevision, source_date: snapshot.source_date || null, candidate_id: user.id, signal_id: signalId, room_id: roomId || null, shared: false }).select("id").single();
   if (error || !data) redirect("/dashboard/proofs?result=error");
   revalidatePath("/dashboard/proofs"); redirect(`/dashboard/proofs?preview=${data.id}`);
 }

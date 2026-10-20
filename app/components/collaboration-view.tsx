@@ -2,8 +2,8 @@ import Link from "next/link";
 import { type Proof, type Entry } from "@/lib/collaboration";
 import styles from "./collaboration.module.css";
 
-export function CollaborationShell({ title, intro, children }: { title: string; intro: string; children: React.ReactNode }) {
-  return <main className={styles.page}><div className={styles.container}><nav className={styles.nav} aria-label="Collaboration tools"><Link href="/dashboard">Workspace</Link><Link href="/dashboard/rooms">Decision rooms</Link><Link href="/dashboard/proofs">Proof Studio</Link><Link href="/dashboard/services">Human services</Link></nav><header><span className={styles.eyebrow}>AVENLO · HUMAN DECISIONS</span><h1>{title}</h1><p>{intro}</p></header>{children}</div></main>;
+export function CollaborationShell({ title, intro, children, audience = "candidate" }: { title: string; intro: string; children: React.ReactNode; audience?: "candidate" | "company" | "staff" }) {
+  return <main className={styles.page}><div className={styles.container}><nav className={styles.nav} aria-label="Collaboration tools"><Link href={audience === "staff" ? "/staff" : audience === "company" ? "/company" : "/dashboard"}>Workspace</Link>{audience !== "staff" && <Link href="/dashboard/rooms">Decision rooms</Link>}{audience === "candidate" && <Link href="/dashboard/proofs">Proof Studio</Link>}{audience !== "company" && <Link href={audience === "staff" ? "/staff/services" : "/dashboard/services"}>Human services</Link>}</nav><header><span className={styles.eyebrow}>AVENLO · HUMAN DECISIONS</span><h1>{title}</h1><p>{intro}</p></header>{children}</div></main>;
 }
 export function ProofView({ proof }: { proof: Proof }) {
   return <div className={styles.proof}><h3>{proof.title}</h3><p>{proof.statement}</p><dl><dt>Source</dt><dd>{proof.source_label} · {proof.source_date ?? "Date not supplied"}</dd><dt>Context</dt><dd>{proof.context}</dd><dt>Uncertainty</dt><dd>{proof.uncertainty_note}</dd><dt>Candidate edits / redactions</dt><dd>{proof.redaction_note}</dd></dl><small>Snapshot captured {new Date(proof.captured_at).toLocaleString("en-IN")}. Candidate-confirmed; independent verification is not implied.</small></div>;

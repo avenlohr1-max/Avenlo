@@ -33,6 +33,7 @@ test.describe("disposable authenticated suite", () => {
     await candidate.goto("/dashboard/rooms");
     await candidate.getByLabel("Employer through its open role").selectOption(process.env.AVENLO_E2E_JOB_ID!);
     await candidate.getByLabel("Room title").fill("Synthetic mutual discussion");
+    await candidate.getByLabel("Name to show in this room").fill("Synthetic Candidate");
     await candidate.getByLabel("Purpose and boundaries").fill("Clarify reporting scope; share only approved evidence");
     await candidate.getByRole("checkbox").check();
     await candidate.getByRole("button", { name: "Create a 30-day room" }).click();

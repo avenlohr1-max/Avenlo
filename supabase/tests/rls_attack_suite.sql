@@ -98,6 +98,11 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN blocked := true;
   END;
   IF NOT blocked THEN RAISE EXCEPTION 'unreviewed signal could be linked to a career scenario'; END IF;
+  UPDATE public.candidate_signals SET verification_status = 'needs_review'
+    WHERE id = '80000000-0000-0000-0000-000000000003';
+  SELECT count(*) INTO n FROM public.candidate_scenario_evidence
+    WHERE signal_id = '80000000-0000-0000-0000-000000000003';
+  IF n <> 0 THEN RAISE EXCEPTION 'unconfirmed signal remained linked as scenario evidence'; END IF;
   DELETE FROM public.candidate_scenarios WHERE id = '90000000-0000-0000-0000-000000000001';
   SELECT count(*) INTO n FROM public.candidate_scenario_evidence WHERE scenario_id = '90000000-0000-0000-0000-000000000001';
   IF n <> 0 THEN RAISE EXCEPTION 'scenario deletion did not remove its evidence links'; END IF;

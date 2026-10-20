@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main", "feature/avenlo-production"]
   pull_request:
-    branches: ["main", "product/talent-record-sharing", "fix/candidate-account-erasure"]
+    branches: ["main", "product/talent-record-sharing", "fix/candidate-account-erasure", "product/opportunity-intelligence"]
 
 permissions:
   contents: read
@@ -107,3 +107,8 @@ jobs:
         env:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/opportunity_intelligence.sql
+
+      - name: Verify employer role ownership, revision history and human review
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/role_intelligence_studio.sql

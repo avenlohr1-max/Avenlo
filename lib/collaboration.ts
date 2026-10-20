@@ -18,6 +18,7 @@ export type Proof = { id: string; candidate_id: string; room_id: string | null; 
 export type Entry = { id: string; author_id: string; kind: string; body: string; created_at: string; proof_id?: string | null };
 export type ServiceCase = { id: string; candidate_id: string; service: string; scope: string; consent: boolean; assigned_staff: string | null; status: string; expires_at: string; created_at: string };
 export function roomIsActive(room: Pick<Room, "active" | "expires_at">, now = Date.now()) { return room.active && new Date(room.expires_at).getTime() > now; }
+export function collaborationTime(value: string) { return new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", year: "numeric", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(value)) + " IST"; }
 export function exportDossier(room: Room, entries: Entry[], proofs: Proof[]) {
   const visibleProofs = proofs.filter(p => p.shared && p.room_id === room.id);
   const ids = new Set(visibleProofs.map(p => p.id));

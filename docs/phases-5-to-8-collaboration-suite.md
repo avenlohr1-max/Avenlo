@@ -2,10 +2,13 @@
 
 Implementation record: 21 October 2026, 03:26 IST. Engineering verification is tracked in PR #12 and the production readiness plan. This document does not assert a production deployment or operational approval.
 
+Engineering update: 21 October 2026, 04:01 IST — ✅ Phases 5–8 engineering DONE. CI #275 passed both the full app/database verification and the real authenticated browser journey, including consent, export, staff assignment, withdrawal, cleanup-failure retry and account erasure. The latest PR #12 checks cover later timestamp/documentation updates. Overall phase acceptance still requires retention, representative-user and service operations evidence.
+
 ## Phase 5 — Mutual Decision Room
 
 - Candidate creates an invitation through a currently open, unexpired role. The recipient is that role's company owner, identified before consent. Purpose and boundaries are required.
 - Room access lasts 30 days. Closing or expiry removes employer access to the room and all child content through RLS. Closed invitations cannot be reopened; renewal requires a new room and consent.
+- Expiry and audit times are displayed with an explicit IST label; the access checks use absolute database timestamps.
 - Only the candidate and the invited company owner participate. Staff and founders receive no implicit room access. Candidate may delete a room and its messages, proofs, dossier entries and export history.
 - Questions, answers, next steps and corrections are append-only. Database triggers stamp author and time. Corrections remain visible instead of silently replacing earlier statements.
 - Invitations do not create applications, change Talent Record sharing, reveal private opportunity decisions or grant ledger access.

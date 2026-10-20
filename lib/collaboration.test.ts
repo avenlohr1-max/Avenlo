@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { roomSchema, proofSchema, dossierSchema, serviceSchema, roomIsActive, exportDossier, type Room, type Proof, type Entry } from "./collaboration";
+import { roomSchema, proofSchema, dossierSchema, serviceSchema, roomIsActive, exportDossier, collaborationTime, type Room, type Proof, type Entry } from "./collaboration";
 const id = "b0000000-0000-0000-0000-000000000001";
 const room: Room = { id, candidate_id: "candidate", company_id: "company", candidate_label: "Candidate", company_label: "Company", title: "Discussion", purpose: "Clarify role", active: true, created_at: "2026-10-01T00:00:00Z", expires_at: "2026-11-01T00:00:00Z" };
 const proof: Proof = { id: "proof", candidate_id: "candidate", room_id: id, signal_id: "private-ledger-id", title: "Reporting", statement: "Built reports", source_label: "Project", source_date: null, context: "Redacted team context", uncertainty_note: "Self reported", redaction_note: "Client removed", shared: true, captured_at: "2026-10-02T00:00:00Z" };
 describe("collaboration boundaries", () => {
+  it("labels consent and audit timestamps with the actual IST date and time", () => {
+    const value = collaborationTime("2026-10-20T22:00:00Z");
+    expect(value).toContain("21 Oct 2026"); expect(value).toContain("03:30"); expect(value).toContain("IST");
+  });
   it("requires explicit invitation and service consent", () => {
     expect(roomSchema.safeParse({ jobId: id, title: "Room", purpose: "Purpose" }).success).toBe(false);
     expect(serviceSchema.safeParse({ service: "career_review", scope: "Help" }).success).toBe(false);

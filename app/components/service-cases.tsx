@@ -1,4 +1,4 @@
-import { type ServiceCase, type Entry, serviceLabels } from "@/lib/collaboration";
+import { collaborationTime, type ServiceCase, type Entry, serviceLabels } from "@/lib/collaboration";
 import { EntryView } from "./collaboration-view";
 import { SubmitButton } from "./submit-button";
 import { appendCaseNote, withdrawService, manageServiceCase } from "@/app/dashboard/services/actions";
@@ -7,7 +7,7 @@ import styles from "./collaboration.module.css";
 export function ServiceCases({ cases, notes, me, staff = false }: { cases: (ServiceCase & { resolution_note?: string; staff_declaration?: string })[]; notes: (Entry & { case_id: string })[]; me: string; staff?: boolean }) {
   return <>{!cases.length && <p className={styles.empty}>No service cases are available.</p>}{cases.map(item => {
     const active = item.consent && new Date(item.expires_at).getTime() > Date.now() && !["closed", "completed"].includes(item.status);
-    return <article key={item.id} className={styles.card}><h2>{serviceLabels[item.service]}</h2><p>{item.scope}</p><p className={styles.meta}>Reference {item.id} · {item.status.replaceAll("_", " ")} · Access {item.consent ? "consented until" : "withdrawn; original expiry"} {new Date(item.expires_at).toLocaleString("en-IN")} · {item.assigned_staff ? "Staff member assigned" : "Awaiting staff assignment"}</p>
+    return <article key={item.id} className={styles.card}><h2>{serviceLabels[item.service]}</h2><p>{item.scope}</p><p className={styles.meta}>Reference {item.id} · {item.status.replaceAll("_", " ")} · Access {item.consent ? "consented until" : "withdrawn; original expiry"} {collaborationTime(item.expires_at)} · {item.assigned_staff ? "Staff member assigned" : "Awaiting staff assignment"}</p>
       {item.staff_declaration && <p>Staff declaration: {item.staff_declaration}</p>}{item.resolution_note && <aside className={styles.notice}>Latest staff scope / outcome note: {item.resolution_note}</aside>}
       {!staff && <form action={withdrawService} className={styles.actions}><input type="hidden" name="id" value={item.id} />{item.consent && <button name="operation" value="withdraw">Withdraw staff access and close</button>}<button className={styles.danger} name="operation" value="delete">Delete case and notes</button></form>}
       <details><summary>Shared case notes and corrections</summary>{notes.filter(note => note.case_id === item.id).map(note => <EntryView key={note.id} entry={note} me={me} />)}<p className={styles.meta}>Notes are visible to you and the authorized staff member. No private staff assessment is kept in this case.</p></details>

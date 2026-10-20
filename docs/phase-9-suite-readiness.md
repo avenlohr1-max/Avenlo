@@ -1,6 +1,14 @@
 # Phase 9 — whole-suite readiness
 
-Updated: 21 October 2026, 03:26 IST. Status: engineering checks in progress; public rollout held.
+Updated: 21 October 2026, 04:01 IST. Status: ✅ automated engineering verification/tooling DONE; overall Phase 9 awaits production and operational gates. Public rollout held.
+
+## Verified engineering evidence
+
+CI [#275](https://github.com/avenlohr1-max/Avenlo/actions/runs/39508323903) passed on code commit `d2ffce80a6a26fe0fefd3fad451ce640b7082b09`: app checks, 74 unit/action tests, public smoke checks, all combined SQL permission/lifecycle suites, synthetic backup/restore and the real Auth/API/Storage browser journey. The journey verified private preview, explicit sharing, employer conversation, dossier export, service assignment and withdrawal, room withdrawal, injected cleanup failure, retry, successful erasure and stale-session write denial.
+
+The final update adds an explicit IST timestamp formatter and its unit test (75 tests locally) plus this record. The latest required checks on [PR #12](https://github.com/avenlohr1-max/Avenlo/pull/12) remain authoritative for each subsequent head; the readiness tracker records their final outcome. Engineering evidence is distinct from a production deployment, a verified off-site production backup or operational approval.
+
+Read-only production recheck: 21 October 2026, 03:44 IST. Signal Ledger, decision-room and role-brief relations are absent, the candidate-sharing column is absent and migration history is empty. Callable public function and leaked-password-protection findings remain. No production mutation was performed.
 
 ## Product coverage
 

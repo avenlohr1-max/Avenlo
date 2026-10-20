@@ -264,10 +264,12 @@ BEGIN
   IF n <> 0 THEN RAISE EXCEPTION 'anonymous user read candidate profiles'; END IF;
   SELECT count(*) INTO n FROM storage.objects;
   IF n <> 0 THEN RAISE EXCEPTION 'anonymous user read private documents'; END IF;
-  SELECT count(*) INTO n FROM public.candidate_scenarios;
-  IF n <> 0 THEN RAISE EXCEPTION 'anonymous user read candidate scenarios'; END IF;
-  SELECT count(*) INTO n FROM public.candidate_scenario_evidence;
-  IF n <> 0 THEN RAISE EXCEPTION 'anonymous user read scenario evidence'; END IF;
+  IF has_table_privilege('anon', 'public.candidate_scenarios', 'SELECT') THEN
+    RAISE EXCEPTION 'anonymous role has a grant on candidate scenarios';
+  END IF;
+  IF has_table_privilege('anon', 'public.candidate_scenario_evidence', 'SELECT') THEN
+    RAISE EXCEPTION 'anonymous role has a grant on scenario evidence';
+  END IF;
 END
 $$;
 ROLLBACK;

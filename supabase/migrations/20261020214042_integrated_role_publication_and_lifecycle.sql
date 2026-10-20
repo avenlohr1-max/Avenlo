@@ -3,7 +3,13 @@
 grant usage on schema private to service_role;
 grant execute on function private.current_user_role() to service_role;
 
+-- Remove obsolete permissive alternatives; PostgreSQL combines permissive
+-- policies with OR, so replacing only the newer name would leave a bypass.
+drop policy if exists "candidates upload own resumes" on storage.objects;
+drop policy if exists "candidates update own resumes" on storage.objects;
+
 drop policy if exists "candidates create own applications" on public.applications;
+drop policy if exists "candidates apply to open jobs" on public.applications;
 create policy "candidates create own applications" on public.applications for insert to authenticated with check (
   candidate_id = (select auth.uid()) and (select private.current_user_role()) = 'candidate'
   and status = 'submitted' and match_score is null and match_explanation = '{}'::jsonb

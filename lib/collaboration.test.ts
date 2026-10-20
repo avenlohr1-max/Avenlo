@@ -38,6 +38,8 @@ describe("collaboration boundaries", () => {
     ];
     const exported = exportDossier(room, entries, [proof, { ...proof, id: "withdrawn", shared: false }, { ...proof, id: "foreign", room_id: "different" }]);
     expect(exported.entries.map(item => item.id)).toEqual(["1", "3"]);
+    expect(exported.entries[0]).toMatchObject({ author: "Candidate", author_type: "candidate" });
+    expect(exported.entries[0]).not.toHaveProperty("author_id");
     expect(exported.proof_snapshots).toHaveLength(1);
     expect(exported.proof_snapshots[0]).toMatchObject({ context: proof.context, uncertainty_note: proof.uncertainty_note, redaction_note: proof.redaction_note });
     expect(JSON.stringify(exported)).not.toContain("private-ledger-id");

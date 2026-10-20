@@ -24,7 +24,7 @@ export function exportDossier(room: Room, entries: Entry[], proofs: Proof[]) {
     format: "avenlo-decision-dossier-v1", exported_at: new Date().toISOString(),
     notice: "Human discussion and candidate-approved snapshots. No automated employment decision. Snapshots may later be corrected or withdrawn; check the live room. Keep this copy secure and delete it when its agreed purpose ends.",
     room: { id: room.id, title: room.title, purpose: room.purpose, candidate: room.candidate_label, company: room.company_label, expires_at: room.expires_at },
-    entries: entries.filter(e => !e.proof_id || ids.has(e.proof_id)),
+    entries: entries.filter(e => !e.proof_id || ids.has(e.proof_id)).map(({ id, kind, body, proof_id, created_at, author_id }) => ({ id, kind, body, proof_id, created_at, author: author_id === room.candidate_id ? room.candidate_label : room.company_label, author_type: author_id === room.candidate_id ? "candidate" : "company" })),
     proof_snapshots: visibleProofs.map(({ id, title, statement, source_label, source_date, context, uncertainty_note, redaction_note, captured_at }) => ({ id, title, statement, source_label, source_date, context, uncertainty_note, redaction_note, captured_at })),
   };
 }

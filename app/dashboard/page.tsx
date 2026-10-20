@@ -86,10 +86,16 @@ export default async function Dashboard() {
             <span className={styles.toolLink}>{hasResume ? "Run checker →" : "Upload resume →"}</span>
           </Link>
           <Link href="/dashboard/skills" className={styles.tool}>
-            <span className={styles.toolIcon}>SK</span><span className={styles.toolLabel}>SKILLS CHECKER</span>
-            <h3>{skillCount ? `${skillCount} skills on file` : "Understand your skill profile"}</h3>
-            <p>See your strengths, skill coverage and the areas worth developing next for your target direction.</p>
-            <span className={styles.toolLink}>Check my skills →</span>
+            <span className={styles.toolIcon}>SK</span><span className={styles.toolLabel}>CAPABILITY ATLAS</span>
+            <h3>{skillCount ? `${skillCount} skills on file` : "Review your capability record"}</h3>
+            <p>Review saved skills separately from resume terms. Extracted mentions are prompts to check, not proof of ability.</p>
+            <span className={styles.toolLink}>Review capabilities →</span>
+          </Link>
+          <Link href="/dashboard/signals" className={styles.tool}>
+            <span className={styles.toolIcon}>SL</span><span className={styles.toolLabel}>SIGNAL LEDGER</span>
+            <h3>Keep evidence connected to its source</h3>
+            <p>Record what happened, where the information came from, and what remains uncertain. Correct entries and review their history.</p>
+            <span className={styles.toolLink}>Open Signal Ledger →</span>
           </Link>
           <Link href="/dashboard/courses" className={styles.tool}>
             <span className={styles.toolIcon}>LP</span><span className={styles.toolLabel}>COURSE ADVISER</span>

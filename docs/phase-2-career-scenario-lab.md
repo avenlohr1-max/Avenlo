@@ -10,7 +10,7 @@ Roles are candidate-defined or come from the candidate's own Talent Record targe
 
 - Scenario records and their evidence links are private to the owning candidate through RLS.
 - Companies and anonymous visitors receive no access.
-- Evidence links must point to a candidate-confirmed signal owned by the same candidate. Composite foreign keys prevent cross-candidate associations.
+- Evidence links can only be created for a candidate-confirmed signal owned by the same candidate. If a signal is later marked needs-review or disputed, its scenario links are removed. Composite foreign keys prevent cross-candidate associations.
 - Deleting a scenario removes its evidence links. Deleting a Signal Ledger entry also removes links to that signal.
 - There is no automatic expiry. Scenario data remains until the candidate deletes it or account erasure is handled.
 - No production migration or real-candidate test is permitted until Phase 0 database-baseline and privacy gates are resolved.

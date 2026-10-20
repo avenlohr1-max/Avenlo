@@ -239,6 +239,7 @@ export default function CompanyPage() {
       <span className="brand">AVENLO</span>
       <div className="actions">
         <Link className="btn" href="/">Home</Link>
+        <Link className="btn" href="/company/roles">Role Intelligence Studio</Link>
         {company ? <Link className="btn" href="/company/applications">Review applicants</Link> : null}
         <SignOutButton />
       </div>

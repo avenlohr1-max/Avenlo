@@ -42,6 +42,10 @@ INSERT INTO storage.objects (bucket_id, name, owner) VALUES
   ('candidate-documents', '10000000-0000-0000-0000-000000000002/resume.pdf', '10000000-0000-0000-0000-000000000002'),
   ('candidate-documents', '10000000-0000-0000-0000-000000000003/resume.pdf', '10000000-0000-0000-0000-000000000003');
 
+INSERT INTO public.candidate_signals (id, candidate_id, signal_type, statement, source_type, source_label, source_date, context, uncertainty_note, verification_status) VALUES
+  ('80000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'achievement', 'Reduced support response time', 'work_sample', '2024 operations project', '2024-06-01', 'Candidate led a process improvement at work.', 'Impact estimate needs a source document.', 'needs_review'),
+  ('80000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000002', 'skill', 'SQL reporting', 'candidate', 'Candidate reflection', null, 'Used SQL to prepare recurring reports.', 'No work sample attached yet.', 'candidate_confirmed');
+
 BEGIN;
 SELECT set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001', true);
 SET LOCAL ROLE authenticated;
@@ -56,6 +60,18 @@ BEGIN
   IF n <> 0 THEN RAISE EXCEPTION 'candidate read another candidate record'; END IF;
   SELECT count(*) INTO n FROM public.candidate_skills WHERE user_id = '10000000-0000-0000-0000-000000000002';
   IF n <> 0 THEN RAISE EXCEPTION 'candidate read another candidate skills'; END IF;
+  SELECT count(*) INTO n FROM public.candidate_signals WHERE candidate_id = '10000000-0000-0000-0000-000000000001';
+  IF n <> 1 THEN RAISE EXCEPTION 'candidate could not read own signal'; END IF;
+  SELECT count(*) INTO n FROM public.candidate_signals WHERE candidate_id = '10000000-0000-0000-0000-000000000002';
+  IF n <> 0 THEN RAISE EXCEPTION 'candidate read another candidate signal'; END IF;
+  UPDATE public.candidate_signals SET statement = 'Reduced support response time by 18 percent'
+    WHERE id = '80000000-0000-0000-0000-000000000001';
+  SELECT count(*) INTO n FROM public.candidate_signal_revisions
+    WHERE signal_id = '80000000-0000-0000-0000-000000000001';
+  IF n <> 1 THEN RAISE EXCEPTION 'signal correction history was not recorded'; END IF;
+  SELECT count(*) INTO n FROM public.candidate_signal_revisions
+    WHERE signal_id = '80000000-0000-0000-0000-000000000002';
+  IF n <> 0 THEN RAISE EXCEPTION 'candidate read another candidate signal history'; END IF;
   SELECT count(*) INTO n FROM public.jobs WHERE id = '60000000-0000-0000-0000-000000000001';
   IF n <> 1 THEN RAISE EXCEPTION 'candidate could not read an open job'; END IF;
   SELECT count(*) INTO n FROM public.jobs WHERE id = '60000000-0000-0000-0000-000000000002';
@@ -92,6 +108,8 @@ BEGIN
     '70000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000002'
   );
   IF n <> 2 THEN RAISE EXCEPTION 'company could not read applicants for its role'; END IF;
+  SELECT count(*) INTO n FROM public.candidate_signals WHERE candidate_id = '10000000-0000-0000-0000-000000000001';
+  IF n <> 0 THEN RAISE EXCEPTION 'company read candidate-private Signal Ledger entries'; END IF;
   SELECT count(*) INTO n FROM public.candidate_profiles WHERE user_id = '10000000-0000-0000-0000-000000000001';
   IF n <> 1 THEN RAISE EXCEPTION 'company could not read applicant candidate record'; END IF;
   SELECT count(*) INTO n FROM public.candidate_profiles WHERE user_id = '10000000-0000-0000-0000-000000000003';

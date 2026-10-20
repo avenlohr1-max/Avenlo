@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     }
 
     const path = `${user.id}/resume.${extension}`;
-    const upload = await admin.storage.from("candidate-documents").upload(path, file, {
+    const upload = await supabase.storage.from("candidate-documents").upload(path, file, {
       upsert: true,
       contentType: file.type,
       cacheControl: "3600",

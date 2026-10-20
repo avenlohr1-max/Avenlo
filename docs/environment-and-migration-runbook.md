@@ -9,7 +9,7 @@
 | Local development | The app reads local environment values such as `.env.local`; these files must stay out of Git. | Use a non-production Supabase project for local schema work. |
 | GitHub pull request CI | Build variables are explicit placeholders. The Phase 0 verification workflow in PR #7 uses disposable PostgreSQL 16, applies migration scripts in filename order, and runs lint, typecheck, unit tests, build, E2E smoke tests, and RLS checks. PR #4's latest verification also passed. | Keep production credentials out of CI build steps. Run checks against the exact release candidate. |
 | Vercel preview | GitHub PRs produce Vercel preview deployments; previews have been observed as Ready. | The Supabase URL configured for Preview has not been independently verified. Confirm it points to a non-production project before using real candidate data. |
-| Staging | No separate Avenlo staging Supabase project or automated migration deployment workflow has been confirmed. | Set up a separate staging project and document its project ref and secret ownership before staging migration rehearsal. |
+| Staging | Not required in the current plan. Development uses local configuration and disposable CI databases with synthetic data. | Keep real candidate and employer data out of development tests; ensure Vercel Preview does not expose production data. |
 | Production | The repository describes Vercel plus Supabase as the intended production path. The exact Vercel environment-to-Supabase project mapping and production migration procedure have not been verified. | Confirm the production Supabase ref, Vercel environment mapping, backup/restore procedure, and release owner before deployment. |
 
 ## Current Supabase connection findings
@@ -28,16 +28,16 @@ No migration was applied during this review.
 - PR #6 adds candidate-controlled Talent Record sharing as `0023_candidate_talent_record_sharing.sql`.
 - A clean-database CI run verifies that the repository scripts replay. It does not reconcile those scripts with the existing connected Supabase database or prove which scripts were previously applied there.
 
-## Safe database release sequence
+## Direct-to-production release sequence
 
-1. Confirm the Vercel Production and Preview Supabase project refs without exposing key values.
-2. Create or identify a separate staging Supabase project.
-3. Capture the existing app schema and compare it with the repository using the Supabase CLI from a local project checkout. Establish a baseline for the existing database before enabling CLI pushes; do not rename migrations that may already be applied.
-4. Rehearse the forward migrations against staging, then inspect the resulting schema, RLS policies, and application flows.
-5. Back up production and confirm a rollback plan.
-6. Apply reviewed migrations to production through a controlled release process, then verify the expected policies and app behavior.
+1. Confirm which Vercel environment is connected to the Avenlo Supabase project; do not expose key values.
+2. Capture the existing production schema read-only and compare it with the repository using the Supabase CLI from a local project checkout. Establish a baseline before enabling automated migration tracking; do not rename migrations that may already have been applied.
+3. Validate each change in local development and disposable CI PostgreSQL using synthetic data, including RLS and resume-access regressions.
+4. Before a production database change, take a verified backup and define the rollback or forward-repair procedure.
+5. Deploy reviewed changes and migrations to production through a controlled release step, then verify policies and app behavior against that exact release.
+6. Keep public access and cohort rollout paused until the product owner explicitly opens them.
 
-Until steps 1–4 are complete, do not run `supabase db push`, `migration repair`, or an ad hoc schema change against the connected project. The current absence of migration history makes that unsafe to automate.
+Until steps 1–4 are complete, do not run `supabase db push`, `migration repair`, or an ad hoc schema change against the connected project. The current absence of migration history makes an automated production push unsafe. A separate staging project is intentionally excluded from this release plan.
 
 ## Release checks
 
@@ -48,4 +48,6 @@ For each release candidate, confirm:
 - every migration replays against a clean disposable database;
 - RLS regression checks pass with candidate consent both enabled and disabled;
 - Vercel Preview is Ready and uses the intended non-production Supabase project;
-- staging migrations and end-to-end flows pass before a production release decision.
+- local and disposable CI tests pass before a direct production release decision;
+- the production schema baseline, backup, and rollback procedure are verified;
+- public rollout remains paused until separately approved.

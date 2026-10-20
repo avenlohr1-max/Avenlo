@@ -27,6 +27,7 @@ function request(body: unknown = { confirmation: "DELETE", password: "current-pa
 beforeEach(() => {
   vi.resetAllMocks();
   vi.stubEnv("ENABLE_CANDIDATE_ACCOUNT_ERASURE", "true");
+  vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://avenlo.test");
   mocks.getUser.mockResolvedValue({ data: { user: { id, email: "candidate@example.test" } }, error: null });
   mocks.profile.mockResolvedValue({ data: { role: "candidate" }, error: null });
   mocks.orders.mockResolvedValue({ count: 0, error: null });
@@ -47,6 +48,18 @@ describe("candidate account erasure", () => {
 
   it.each(["https://other.test", "null", ""])("rejects origin %s before using credentials", async (origin) => {
     expect((await DELETE(request(undefined, origin))).status).toBe(403);
+    expect(mocks.getUser).not.toHaveBeenCalled();
+  });
+
+  it("uses the canonical public origin behind an internal Next server hostname", async () => {
+    const internalRequest = new Request("http://localhost:3000/api/candidate/account", { method: "DELETE", headers: { origin: "https://avenlo.test", "content-type": "application/json" }, body: JSON.stringify({ confirmation: "DELETE", password: "current-password" }) });
+    expect((await DELETE(internalRequest)).status).toBe(200);
+    expect(mocks.deleteUser).toHaveBeenCalledWith(id, false);
+  });
+
+  it("fails closed on invalid site configuration", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "not-a-url");
+    expect((await DELETE(request())).status).toBe(503);
     expect(mocks.getUser).not.toHaveBeenCalled();
   });
 

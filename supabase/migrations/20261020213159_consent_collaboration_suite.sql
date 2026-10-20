@@ -84,7 +84,8 @@ create index proof_packages_room_idx on public.proof_packages(room_id);
 create index proof_packages_signal_idx on public.proof_packages(candidate_id, signal_id);
 alter table public.proof_packages enable row level security;
 revoke all on public.proof_packages from public, anon, authenticated;
-grant select, insert, delete on public.proof_packages to authenticated;
+grant insert, delete on public.proof_packages to authenticated;
+grant select(id,candidate_id,room_id,title,statement,source_label,source_date,context,uncertainty_note,redaction_note,shared,captured_at) on public.proof_packages to authenticated;
 grant update(shared) on public.proof_packages to authenticated;
 create policy "candidate owns proof snapshots" on public.proof_packages for all to authenticated
 using (candidate_id = (select auth.uid())) with check (

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { collaborationContext } from "@/lib/collaboration-server";
-import { type Room, type Proof, type Entry, roomIsActive } from "@/lib/collaboration";
+import { type Room, type Proof, type Entry, roomIsActive, proofFields } from "@/lib/collaboration";
 import { CollaborationShell, ProofView, EntryView, ResultNotice } from "@/app/components/collaboration-view";
 import { SubmitButton } from "@/app/components/submit-button";
 import { appendRoomMessage, appendDossierEntry, changeRoomAccess } from "../actions";
@@ -18,7 +18,7 @@ export default async function RoomWorkspace({ params, searchParams }: { params: 
   const room = roomResult.data as Room;
   const [messages, proofs, dossier, exports] = await Promise.all([
     supabase.from("room_messages").select("*").eq("room_id", id).order("created_at", { ascending: false }).limit(200),
-    supabase.from("proof_packages").select("*").eq("room_id", id).eq("shared", true).order("captured_at", { ascending: false }).limit(100),
+    supabase.from("proof_packages").select(proofFields).eq("room_id", id).eq("shared", true).order("captured_at", { ascending: false }).limit(100),
     supabase.from("dossier_entries").select("*").eq("room_id", id).order("created_at", { ascending: false }).limit(200),
     supabase.from("dossier_exports").select("id, actor_id, exported_at").eq("room_id", id).order("exported_at", { ascending: false }).limit(20),
   ]);

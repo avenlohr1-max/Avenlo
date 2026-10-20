@@ -57,6 +57,11 @@ select set_config('request.jwt.claim.sub', '20000000-0000-0000-0000-000000000001
 set local role authenticated;
 do $$ begin
   if (select count(*) from public.proof_packages) <> 1 then raise exception 'approved proof not visible'; end if;
+  if has_column_privilege('authenticated','public.proof_packages','signal_id','SELECT') or has_column_privilege('authenticated','public.proof_packages','source_fingerprint','SELECT') then raise exception 'private proof source metadata granted'; end if;
+  begin
+    perform signal_id from public.proof_packages;
+    raise exception 'recipient could retrieve private ledger identifier';
+  exception when insufficient_privilege then null; end;
   if (select count(*) from public.dossier_entries) <> 2 then raise exception 'dossier unavailable'; end if;
 end $$;
 insert into public.dossier_exports(room_id) values ('b0000000-0000-0000-0000-000000000001');

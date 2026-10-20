@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { collaborationContext } from "@/lib/collaboration-server";
-import { type Room, type Proof, roomIsActive } from "@/lib/collaboration";
+import { type Room, type Proof, roomIsActive, proofFields } from "@/lib/collaboration";
 import { CollaborationShell, ProofView, ResultNotice } from "@/app/components/collaboration-view";
 import { SubmitButton } from "@/app/components/submit-button";
 import { prepareProof, changeProofSharing } from "./actions";
@@ -12,7 +12,7 @@ export default async function ProofStudio({ searchParams }: { searchParams: Prom
   const { signal: selectedId, preview, result } = await searchParams;
   const [signals, packages, rooms] = await Promise.all([
     supabase.from("candidate_signals").select("id, revision, statement, source_label, source_date, context, uncertainty_note").eq("candidate_id", user.id).eq("verification_status", "candidate_confirmed").order("updated_at", { ascending: false }).limit(200),
-    supabase.from("proof_packages").select("*").eq("candidate_id", user.id).order("captured_at", { ascending: false }).limit(100),
+    supabase.from("proof_packages").select(proofFields).eq("candidate_id", user.id).order("captured_at", { ascending: false }).limit(100),
     supabase.from("decision_rooms").select("*").eq("candidate_id", user.id).eq("active", true).gt("expires_at", new Date().toISOString()).order("created_at", { ascending: false }).limit(100),
   ]);
   const signalRows = (signals.data ?? []) as Signal[];

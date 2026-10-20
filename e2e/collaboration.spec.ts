@@ -101,7 +101,7 @@ test.describe("disposable authenticated suite", () => {
     sql("create function private.e2e_block_storage_delete() returns trigger language plpgsql as $$ begin raise exception 'synthetic cleanup failure'; end $$; create trigger e2e_block_storage_delete before delete on storage.objects for each row execute function private.e2e_block_storage_delete();");
     try {
       const failedDeletion = await candidate.request.delete("/api/candidate/account", { headers: { Origin: "http://127.0.0.1:3000" }, data: { confirmation: "DELETE", password: process.env.AVENLO_E2E_PASSWORD } });
-      expect(failedDeletion.status()).toBe(503);
+      expect(failedDeletion.status(), JSON.stringify(await failedDeletion.json())).toBe(503);
       expect((await admin.auth.admin.getUserById(candidateId)).data.user?.id).toBe(candidateId);
       const retained = await admin.storage.from("candidate-documents").list(candidateId);
       expect(retained.data?.some(item => item.name === "resume.pdf")).toBe(true);

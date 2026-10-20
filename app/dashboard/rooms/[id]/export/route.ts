@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { collaborationContext } from "@/lib/collaboration-server";
-import { exportDossier, roomIsActive, type Room, type Proof, type Entry } from "@/lib/collaboration";
+import { exportDossier, roomIsActive, proofFields, type Room, type Proof, type Entry } from "@/lib/collaboration";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { supabase, user } = await collaborationContext(["candidate", "company"]);
@@ -11,7 +11,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   // Fail closed rather than silently truncate an exported record.
   const [entries, proofs] = await Promise.all([
     supabase.from("dossier_entries").select("*", { count: "exact" }).eq("room_id", id).order("created_at").limit(1000),
-    supabase.from("proof_packages").select("*", { count: "exact" }).eq("room_id", id).eq("shared", true).order("captured_at").limit(1000),
+    supabase.from("proof_packages").select(proofFields, { count: "exact" }).eq("room_id", id).eq("shared", true).order("captured_at").limit(1000),
   ]);
   if (entries.error || proofs.error || entries.count === null || proofs.count === null || entries.count !== entries.data?.length || proofs.count !== proofs.data?.length) return new Response("Unable to export the complete record. Contact support.", { status: 503 });
   const { error: auditError } = await supabase.from("dossier_exports").insert({ room_id: id, actor_id: user.id });

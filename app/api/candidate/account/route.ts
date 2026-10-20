@@ -14,7 +14,12 @@ export async function DELETE(request: Request) {
   if (process.env.ENABLE_CANDIDATE_ACCOUNT_ERASURE !== "true") {
     return failure("Account deletion is not available yet. Contact support@avenlo.in for help.", 503);
   }
-  if (request.headers.get("origin") !== new URL(request.url).origin) {
+  // Next's server URL can use its internal hostname behind a proxy. The
+  // configured public site is authoritative; do not trust forwarded headers.
+  let expectedOrigin: string;
+  try { expectedOrigin = new URL(process.env.NEXT_PUBLIC_SITE_URL || request.url).origin; }
+  catch { return failure("Account deletion is unavailable until site configuration is corrected.", 503); }
+  if (request.headers.get("origin") !== expectedOrigin) {
     return failure("Open account settings on Avenlo to delete your account.", 403);
   }
   if (!request.headers.get("content-type")?.startsWith("application/json")) {

@@ -17,6 +17,7 @@ Implementation record: 21 October 2026, 03:26 IST. Engineering verification is t
 - Snapshots cannot be rewritten in place. Delete and recreate when edits are required. Delete cascades to linked dossier evidence references.
 - Any source update automatically withdraws linked snapshots. A server-generated source fingerprint prevents resharing an outdated snapshot, including changes within one transaction. Preparing a new snapshot is required.
 - Candidate confirmation is not independent verification. Recipients see that limitation and the captured date. Source identifiers and fingerprints are omitted from exports; original unredacted ledger fields are never included.
+- Column grants also prevent authenticated API clients from selecting private ledger identifiers, source fingerprints or internal version metadata from proof snapshots. The UI and export explicitly request only approved snapshot fields.
 - Proof is text evidence in this release. No document attachment, independent credential verification or externally accessible public share link is claimed.
 
 ## Phase 7 — Decision Dossier

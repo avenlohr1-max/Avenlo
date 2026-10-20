@@ -45,6 +45,12 @@ INSERT INTO storage.objects (bucket_id, name, owner) VALUES
 INSERT INTO public.candidate_signals (id, candidate_id, signal_type, statement, source_type, source_label, source_date, context, uncertainty_note, verification_status) VALUES
   ('80000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'achievement', 'Reduced support response time', 'work_sample', '2024 operations project', '2024-06-01', 'Candidate led a process improvement at work.', 'Impact estimate needs a source document.', 'needs_review'),
   ('80000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000002', 'skill', 'SQL reporting', 'candidate', 'Candidate reflection', null, 'Used SQL to prepare recurring reports.', 'No work sample attached yet.', 'candidate_confirmed');
+INSERT INTO public.candidate_capability_evidence (candidate_id, candidate_skill_id, signal_id)
+SELECT cs.user_id, cs.id, sig.id
+FROM public.candidate_skills cs
+JOIN public.candidate_signals sig ON sig.candidate_id = cs.user_id
+WHERE (cs.user_id = '10000000-0000-0000-0000-000000000001' AND cs.skill = 'SQL' AND sig.id = '80000000-0000-0000-0000-000000000001')
+   OR (cs.user_id = '10000000-0000-0000-0000-000000000002' AND cs.skill = 'Finance' AND sig.id = '80000000-0000-0000-0000-000000000002');
 
 BEGIN;
 SELECT set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001', true);
@@ -64,6 +70,10 @@ BEGIN
   IF n <> 1 THEN RAISE EXCEPTION 'candidate could not read own signal'; END IF;
   SELECT count(*) INTO n FROM public.candidate_signals WHERE candidate_id = '10000000-0000-0000-0000-000000000002';
   IF n <> 0 THEN RAISE EXCEPTION 'candidate read another candidate signal'; END IF;
+  SELECT count(*) INTO n FROM public.candidate_capability_evidence WHERE candidate_id = '10000000-0000-0000-0000-000000000001';
+  IF n <> 1 THEN RAISE EXCEPTION 'candidate could not read own capability evidence link'; END IF;
+  SELECT count(*) INTO n FROM public.candidate_capability_evidence WHERE candidate_id = '10000000-0000-0000-0000-000000000002';
+  IF n <> 0 THEN RAISE EXCEPTION 'candidate read another candidate capability evidence link'; END IF;
   UPDATE public.candidate_signals SET statement = 'Reduced support response time by 18 percent'
     WHERE id = '80000000-0000-0000-0000-000000000001';
   SELECT count(*) INTO n FROM public.candidate_signal_revisions
@@ -110,6 +120,8 @@ BEGIN
   IF n <> 2 THEN RAISE EXCEPTION 'company could not read applicants for its role'; END IF;
   SELECT count(*) INTO n FROM public.candidate_signals WHERE candidate_id = '10000000-0000-0000-0000-000000000001';
   IF n <> 0 THEN RAISE EXCEPTION 'company read candidate-private Signal Ledger entries'; END IF;
+  SELECT count(*) INTO n FROM public.candidate_capability_evidence WHERE candidate_id = '10000000-0000-0000-0000-000000000001';
+  IF n <> 0 THEN RAISE EXCEPTION 'company read candidate-private capability evidence links'; END IF;
   SELECT count(*) INTO n FROM public.candidate_profiles WHERE user_id = '10000000-0000-0000-0000-000000000001';
   IF n <> 1 THEN RAISE EXCEPTION 'company could not read applicant candidate record'; END IF;
   SELECT count(*) INTO n FROM public.candidate_profiles WHERE user_id = '10000000-0000-0000-0000-000000000003';

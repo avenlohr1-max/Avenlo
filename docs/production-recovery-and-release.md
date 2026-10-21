@@ -1,6 +1,6 @@
 # Production recovery and controlled release
 
-Updated: 21 October 2026, 20:34 IST. Status: execution procedure prepared, production recovery evidence pending. Supabase project: `yzuuutynqfpbiozlrfmy`; live engine PostgreSQL 17.11, confirmed read-only on 21 October. No separate staging project is required.
+Updated: 22 October 2026, 01:22 IST. Status: execution procedure prepared, production recovery evidence pending. Supabase project: `yzuuutynqfpbiozlrfmy`; live engine PostgreSQL 17.11, confirmed read-only on 21 October. No separate staging project is required.
 
 ## Recovery package
 
@@ -46,6 +46,10 @@ On a critical failure hold intake, restrict affected workflow and revert applica
 First-cohort approval records product list, maximum invited users, selection, dates/support coverage, accountable founder and stop conditions. Proposed initial cap: five candidates and two employers after internal acceptance; this is not an invitation authorization. Any privacy/consent failure, failed deletion, broken core journey or unstaffed support pauses expansion. Public release remains held separately.
 
 ## Recovery evidence record
+
+### Completed snapshot drill — 22 October 2026, 01:20 IST
+
+✅ Encrypted private off-site copy, downloaded-copy hash/decryption/archive checks, printed separate key custody and supported hosted logical recovery DONE for the 21 October 20:20 IST snapshot. All 41 recovered table counts/row digests, application schema/grants, Auth/Storage service reads and synthetic candidate/anonymous boundaries passed. The isolated $0 recovery project was deleted; original Production remained healthy and unchanged. See `production-backup-recovery-evidence.md` for provider-managed exclusions and measured scope. A recurring backup schedule, future nonempty Vault/MFA/Storage recovery and final release acceptance are not claimed by this drill. The earlier paragraph below is retained as historical evidence and is superseded for current off-site/drill status.
 
 Package reference / source project and engine / consistency cutoff IST / encrypted destination reference / encryption and recoverable key custodian / database and object checksums / restore target access controls / counts and permission checks / measured RPO-RTO / deletion suppression result / restore teardown / operator / accountable owner acceptance / actual IST timestamps.
 

@@ -1,6 +1,6 @@
 # Phase 9 — whole-suite readiness
 
-Updated: 21 October 2026, 20:34 IST. Status: ✅ automated engineering verification/tooling DONE; overall Phase 9 awaits production and operational gates. Public rollout held.
+Updated: 22 October 2026, 01:22 IST. Status: ✅ automated engineering verification/tooling DONE; overall Phase 9 awaits production and operational gates. Public rollout held.
 
 ## Verified engineering evidence
 
@@ -47,7 +47,7 @@ The disposable CI stack is a temporary test fixture, not a separate staging depl
 
 | Gate | Evidence needed | Current constraint |
 |---|---|---|
-| Backup and recovery | Encrypted off-site backup plus successful disposable restore, recorded RPO/RTO and owner | Secure CLI and local scoped export/restore verified; independent off-site/full recovery pending |
+| Backup and recovery | Encrypted off-site snapshot, recoverable key and verified hosted logical recovery with measured exercise | ✅ Snapshot drill DONE 22 October; 41-table data/schema/grant/service checks and teardown passed. See `production-backup-recovery-evidence.md`; recurring operations/fresh pre-release capture remain |
 | Schema baseline | Read-only live comparison, reviewed delta and canonical migration history | Initial application comparison and 34-file local delta passed; history/role/Auth-trigger reconciliation and final review pending |
 | Auth security | Owner confirms leaked-password protection and production Auth configuration; advisors rechecked | Founder stays on Free; leaked-password protection requires Pro or above and remains open |
 | Direct production release | Exact release SHA, reviewed migration bundle, preflight, smoke evidence and rollback owner | PR #12 is review code; no deployment performed |

@@ -1,6 +1,6 @@
 # Overall phase closure
 
-Updated: 21 October 2026, 20:34 IST.
+Updated: 22 October 2026, 01:22 IST.
 
 Status: closure procedures prepared; live execution and human acceptance remain open. Public rollout remains held. The founder chose to remain on Supabase Free on 21 October; leaked-password protection remains an explicit security gate because the provider requires Pro or above. No upgrade is authorized.
 
@@ -34,6 +34,8 @@ Founder accepted support/privacy and service-delivery ownership. Coverage, mailb
 Use `suite-user-acceptance.md`, `service-and-support-operations.md` and `production-recovery-and-release.md` for the steps. An approved document does not imply its procedures have been performed.
 
 ## Order of execution
+
+**Sequential update (22 October 2026, 01:20 IST):** ✅ Item 1 snapshot backup and recovery drill DONE, including independent private encrypted storage, downloaded-copy verification, founder-confirmed printed key custody, 41-table hosted recovery verification, permission/service checks and temporary-project teardown. See `production-backup-recovery-evidence.md` for exact scope. Next is Item 2 live migration/security; no overall phase is marked DONE until its other exit criteria pass. No local container installation occurred.
 
 1. Authenticate owner tooling securely; establish the private backup destination and recovery operator. Record only evidence references, never keys/passwords or user records in Git.
 2. Back up database and actual Storage bytes; restore privately with outbound notifications disabled. Measure recovery time and check deletion suppression before reopening restored access.

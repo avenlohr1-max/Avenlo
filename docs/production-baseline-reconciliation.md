@@ -1,6 +1,6 @@
 # Production baseline reconciliation evidence
 
-Updated: 21 October 2026, 20:34 IST. Status: ✅ read-only comparison and local restored-baseline forward-delta validation DONE; live history reconciliation/application pending. Public rollout held.
+Updated: 22 October 2026, 01:22 IST. Status: ✅ read-only comparison and local restored-baseline forward-delta validation DONE; live history reconciliation/application pending. Public rollout held.
 
 ## Source and safety boundary
 
@@ -39,7 +39,7 @@ Postconditions passed: suite relations present, existing candidate sharing remai
 
 ## Remaining release controls
 
-1. Obtain an encrypted off-site copy, recoverable key custody and verified full recovery coverage. Define a consistent write cutoff and recheck data drift before release.
+1. ✅ Snapshot off-site backup/key custody and hosted logical recovery drill DONE on 22 October; see `production-backup-recovery-evidence.md` for verified scope, timings and exclusions. Define a fresh consistent write cutoff, refresh the backup and recheck data drift before live changes; recurring backup operations remain to establish.
 2. Capture/verify Auth trigger and relevant role memberships; review platform/default grants. Reconcile missing remote history and repeated 0010/0011/0012 prefixes under an explicit canonical plan. Do not claim every historical migration has run and do not rename potentially applied files.
 3. Freeze/review exact forward-delta checksums and preconditions; revalidate if source or live schema/data changes. The local review manifest is not an authorized automated apply bundle.
 4. Resolve the security release gate. The founder chose Free, on which leaked-password protection is unavailable; no upgrade or waiver is approved.

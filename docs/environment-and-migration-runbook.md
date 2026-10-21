@@ -5,6 +5,12 @@
 
 ## Environment map
 
+### Closure progress — 21 October 2026, 20:36 IST
+
+Secure owner CLI authentication and local linking are now verified. The explicitly approved restricted local full database export succeeded; scoped application/Auth/Storage restore and aggregate metadata verification passed. The observed application schema matches initial migration 0001 in the recorded comparison areas. All 34 later migration files and post-delta security assertions passed on a separate local restored clone. See `production-baseline-reconciliation.md` for scope and exclusions.
+
+The local encrypted copy is Windows-account-bound; no independent encrypted off-site destination or full platform recovery is verified. The founder chose Free, so leaked-password protection remains unavailable and that security gate stays open. Remote history still needs canonical reconciliation; no Production migration/history repair, deployment or settings change occurred. Earlier observations below are retained as history; current evidence is in the linked closure records.
+
 | Environment | Verified behavior | Required control |
 | --- | --- | --- |
 | Local development | Use the local Supabase stack and local environment values such as `.env.local`; keep secrets out of Git. | Use synthetic data and never point local development at production. |

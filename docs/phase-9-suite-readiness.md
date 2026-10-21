@@ -1,14 +1,22 @@
 # Phase 9 — whole-suite readiness
 
-Updated: 21 October 2026, 04:01 IST. Status: ✅ automated engineering verification/tooling DONE; overall Phase 9 awaits production and operational gates. Public rollout held.
+Updated: 21 October 2026, 20:34 IST. Status: ✅ automated engineering verification/tooling DONE; overall Phase 9 awaits production and operational gates. Public rollout held.
 
 ## Verified engineering evidence
 
-CI [#275](https://github.com/avenlohr1-max/Avenlo/actions/runs/39508323903) passed on code commit `d2ffce80a6a26fe0fefd3fad451ce640b7082b09`: app checks, 74 unit/action tests, public smoke checks, all combined SQL permission/lifecycle suites, synthetic backup/restore and the real Auth/API/Storage browser journey. The journey verified private preview, explicit sharing, employer conversation, dossier export, service assignment and withdrawal, room withdrawal, injected cleanup failure, retry, successful erasure and stale-session write denial.
+CI [#276](https://github.com/avenlohr1-max/Avenlo/actions/runs/39508929142) passed on application commit `2c952006b8ad88dd6dce252c4eb3c4ddc30a178a`: app checks, 75 unit/action tests, public smoke checks, all combined SQL permission/lifecycle suites, synthetic backup/restore and the real Auth/API/Storage browser journey. The journey verified private preview, explicit sharing, employer conversation, dossier export, service assignment and withdrawal, room withdrawal, injected cleanup failure, retry, successful erasure and stale-session write denial.
 
-The final update adds an explicit IST timestamp formatter and its unit test (75 tests locally) plus this record. The latest required checks on [PR #12](https://github.com/avenlohr1-max/Avenlo/pull/12) remain authoritative for each subsequent head; the readiness tracker records their final outcome. Engineering evidence is distinct from a production deployment, a verified off-site production backup or operational approval.
+The application update includes an explicit IST timestamp formatter and its unit test. The later closure update changes documentation only. The latest required checks on [PR #12](https://github.com/avenlohr1-max/Avenlo/pull/12) remain authoritative for each subsequent head; the readiness tracker records their outcome. Engineering evidence is distinct from a production deployment, a verified off-site production backup or operational approval.
 
 Read-only production recheck: 21 October 2026, 03:44 IST. Signal Ledger, decision-room and role-brief relations are absent, the candidate-sharing column is absent and migration history is empty. Callable public function and leaked-password-protection findings remain. No production mutation was performed.
+
+## Overall closure work — 21 October 2026, 20:36 IST
+
+The executable closure pack is prepared in `overall-phase-closure.md`, `suite-user-acceptance.md`, `service-and-support-operations.md`, `production-recovery-and-release.md` and `production-baseline-reconciliation.md`. These define the evidence and accountable roles for each remaining gate. Founder confirmed support/privacy and service-delivery ownership. Human sessions, coverage and operational drills are not yet recorded.
+
+The founder completed secure CLI login and project linking this session. The approved restricted local export succeeded; its scoped application/Auth/Storage restore and aggregate metadata comparison passed. Eight application-schema comparison areas match repository migration 0001. All 34 later migrations and security assertions passed on a separate private restored clone. Production PostgreSQL is 17.11. An additional local Windows-account-bound encrypted copy was decrypt/hash tested. Independent off-site backup, portable key custody and full platform recovery remain open; the scope/limitations are recorded in the baseline evidence. No remote migration history was repaired.
+
+The founder chose to remain on Supabase Free. Official password-security documentation confirms leaked-password protection requires Pro or above, so that gate remains open; this is not merely an owner setting that can be toggled on Free. No spending or security exception is authorized. Database backups also exclude Storage object bytes; actual object export/restore must be included in recovery evidence. No live migration, deployment or erasure enablement was performed.
 
 ## Product coverage
 
@@ -39,9 +47,9 @@ The disposable CI stack is a temporary test fixture, not a separate staging depl
 
 | Gate | Evidence needed | Current constraint |
 |---|---|---|
-| Backup and recovery | Encrypted off-site backup plus successful disposable restore, recorded RPO/RTO and owner | Free project; no verified backup or secure CLI/DB access available |
-| Schema baseline | Read-only live comparison, reviewed delta and canonical migration history | Live history previously empty; duplicate legacy prefixes require reconciliation |
-| Auth security | Owner confirms leaked-password protection and production Auth configuration; advisors rechecked | Owner dashboard setting remains outstanding |
+| Backup and recovery | Encrypted off-site backup plus successful disposable restore, recorded RPO/RTO and owner | Secure CLI and local scoped export/restore verified; independent off-site/full recovery pending |
+| Schema baseline | Read-only live comparison, reviewed delta and canonical migration history | Initial application comparison and 34-file local delta passed; history/role/Auth-trigger reconciliation and final review pending |
+| Auth security | Owner confirms leaked-password protection and production Auth configuration; advisors rechecked | Founder stays on Free; leaked-password protection requires Pro or above and remains open |
 | Direct production release | Exact release SHA, reviewed migration bundle, preflight, smoke evidence and rollback owner | PR #12 is review code; no deployment performed |
 | Erasure enablement | Auth/Storage journey green, paid-order exception and concurrency policy accepted | Production flag remains disabled pending remaining gates |
 | Retention | Approved retention/exception rules, candidate notice, purge owner/schedule and audit evidence | Draft technical defaults in `collaboration-retention.md`; not a legal approval |

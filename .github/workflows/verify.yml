@@ -47,6 +47,9 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Verify canonical migration provenance
+        run: node scripts/verify-migration-map.mjs
+
       - name: Dependency audit
         run: npm audit --audit-level=high
 
@@ -90,7 +93,7 @@ jobs:
           psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/rls_harness_setup.sql
           for migration in supabase/migrations/*.sql; do
             echo "Applying $migration"
-            psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f "$migration"
+            psql -h localhost -U postgres -d avenlo_test --single-transaction -v ON_ERROR_STOP=1 -f "$migration"
           done
 
       - name: Run RLS attack regression suite
@@ -149,8 +152,8 @@ jobs:
       - name: Start disposable Supabase Auth, API and Storage
         shell: bash
         run: |
-          # Legacy files repeat version prefixes. Replay them explicitly only in
-          # this empty disposable DB; this is not a production history repair.
+          # Start services without applying migrations, then replay the verified
+          # canonical sequence transactionally against this empty disposable DB.
           mv supabase/migrations "$RUNNER_TEMP/avenlo-migrations"
           npx --yes supabase@2.121.0 init
           mkdir -p supabase/migrations
@@ -173,7 +176,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y postgresql-client
           for migration in supabase/migrations/*.sql; do
             echo "Applying $migration"
-            psql "$AVENLO_LOCAL_DB_URL" -v ON_ERROR_STOP=1 -f "$migration"
+            psql "$AVENLO_LOCAL_DB_URL" --single-transaction -v ON_ERROR_STOP=1 -f "$migration"
           done
           psql "$AVENLO_LOCAL_DB_URL" -c "NOTIFY pgrst, 'reload schema';"
           node scripts/seed-local-integration.mjs

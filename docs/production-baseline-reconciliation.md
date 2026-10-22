@@ -1,12 +1,18 @@
 # Production baseline reconciliation evidence
 
-Updated: 22 October 2026, 01:22 IST. Status: ✅ read-only comparison and local restored-baseline forward-delta validation DONE; live history reconciliation/application pending. Public rollout held.
+Updated: 22 October 2026, 18:17 IST. Status: ✅ baseline reconciliation and Production suite database upgrade DONE; remaining Auth, application release and operational gates open. Public rollout held.
+
+## Live execution closure
+
+See `production-upgrade-evidence.md` and `canonical-migration-history.md`. At 01:49–01:50 IST the equivalent initial canonical version was explicitly adopted and 34 reviewed forward migrations executed after fresh backup and schema preflight. Original seven-table row digests/counts matched. At 18:11 IST an additional security migration closed inherited browser execution grants. Live readback: 36 history entries, 33 public tables with RLS, private Storage, no maintenance hold and no browser-callable public SECURITY DEFINER functions. Password minimum is eight; the localhost Auth callback, delivery verification, Free leaked-password gate, application deployment and operational/user acceptance remain open.
+
+The following sections document the earlier captured baseline and trial, not the current post-upgrade schema.
 
 ## Source and safety boundary
 
 Source project `yzuuutynqfpbiozlrfmy`, PostgreSQL 17.11. The founder authenticated owner CLI tooling and explicitly approved the full sensitive database export to a Windows-user/SYSTEM-only local recovery folder outside Git. Read-only export completed at 20:20 IST on 21 October. A custom-format archive index is readable. No credentials, user records, Auth hashes, private object paths or backup bytes belong in this public repository.
 
-Read-only Storage metadata checks found zero buckets and zero objects at this checkpoint. Recheck before release and capture bytes if that changes. There is no encrypted off-site copy yet. This evidence does not close the full recovery gate.
+Read-only Storage metadata checks found zero buckets and zero objects at the initial checkpoint. Off-site encryption and the hosted recovery drill were subsequently verified; fresh encrypted snapshots were verified before live changes. The upgrade created the private candidate documents bucket; objects remain zero at final readback. Capture object bytes if that changes.
 
 ## Live versus repository initial schema
 
@@ -45,4 +51,4 @@ Postconditions passed: suite relations present, existing candidate sharing remai
 4. Resolve the security release gate. The founder chose Free, on which leaked-password protection is unavailable; no upgrade or waiver is approved.
 5. Complete retention, user acceptance, operations and controlled release records before public/cohort access. Production erasure stays disabled.
 
-No live DDL, data mutation, migration-history repair, Auth setting change, main merge or application deployment was performed for this evidence.
+At the original 21 October comparison/trial checkpoint, no live mutation was performed. The live execution closure above supersedes that historical state. No main merge or application deployment has occurred.

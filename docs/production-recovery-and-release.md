@@ -1,6 +1,8 @@
 # Production recovery and controlled release
 
-Updated: 22 October 2026, 01:22 IST. Status: execution procedure prepared, production recovery evidence pending. Supabase project: `yzuuutynqfpbiozlrfmy`; live engine PostgreSQL 17.11, confirmed read-only on 21 October. No separate staging project is required.
+Updated: 22 October 2026, 18:17 IST. Status: ✅ captured-snapshot off-site recovery drill and canonical Production database upgrade verified; ongoing operations, application release and acceptance remain open. Supabase project: `yzuuutynqfpbiozlrfmy`; live engine PostgreSQL 17.11. No separate staging project is required.
+
+Current execution is recorded in `production-upgrade-evidence.md`: fresh encrypted off-site captures preceded both live changes, the 34-file upgrade plus additional security fix are applied, and no temporary maintenance hold remains. There are 36 canonical history entries. No application deployment or erasure enablement is claimed. Earlier dated backup observations below are historical and superseded by the completed drill and upgrade records.
 
 ## Recovery package
 

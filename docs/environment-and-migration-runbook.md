@@ -1,7 +1,13 @@
 # Environment and database migration runbook
 
-**Updated:** 20 October 2026, 22:54 IST (UTC+05:30)  
+**Updated:** 22 October 2026, 18:17 IST (UTC+05:30)
 **Status:** Verified engineering facts and outstanding release controls.
+
+## Current execution status
+
+✅ Canonical reconciliation and the reviewed Production database upgrade have executed. `supabase/migration-map.json` preserves original scripts in the archive and maps the canonical timestamp sequence. The initial equivalent entry was adopted, 34 forward files executed and a further function-access fix applied. Live readback: 36 history entries, 33 public tables with RLS and no browser-callable public SECURITY DEFINER functions. CI #280 passed the exact application/security candidate. See `production-upgrade-evidence.md` for preflight, data preservation, fresh backups and remaining controls.
+
+The password minimum is now eight, matching the forms. Auth site URL still points to localhost; verified Production origin/callback and email-delivery checks remain. Resend SMTP is configured. Free-plan leaked-password protection remains an open gate. Application deployment, erasure enablement and operational/user acceptance have not occurred. Previous dated sections below are historical observations, not instructions to replay already-applied migrations. Future changes must use new timestamp migrations and a fresh preflight; never push the preserved legacy archive.
 
 ## Environment map
 

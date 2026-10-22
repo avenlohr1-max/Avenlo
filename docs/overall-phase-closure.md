@@ -1,8 +1,16 @@
 # Overall phase closure
 
-Updated: 22 October 2026, 01:22 IST.
+Updated: 22 October 2026, 18:17 IST.
 
-Status: closure procedures prepared; live execution and human acceptance remain open. Public rollout remains held. The founder chose to remain on Supabase Free on 21 October; leaked-password protection remains an explicit security gate because the provider requires Pro or above. No upgrade is authorized.
+Status: ✅ Production database/history and function-access hardening executed and verified; application deployment and human/operational acceptance remain open. Public rollout remains held. The founder chose to remain on Supabase Free on 21 October; leaked-password protection remains an explicit security gate because the provider requires Pro or above. No upgrade is authorized.
+
+## Current verified position — 22 October, 18:12 IST
+
+See `production-upgrade-evidence.md`: the initial schema was adopted after equivalence checks, all 34 canonical forward files executed, and an additional tested function-access migration applied. Live readback has 36 history entries, 33 public tables with RLS, zero browser-callable public SECURITY DEFINER functions, private Storage and no maintenance hold. Original seven-table rows were preserved. Fresh private encrypted off-site snapshots were downloaded/decrypted/hash/index verified; the earlier hosted recovery drill remains recorded separately. CI #280 passed both jobs on `a3a01b2d61a40c7205bfdf1ceaa1806fe8af8e84`, including 88 tests and six SQL suites.
+
+The password minimum now matches the existing eight-character forms. Resend SMTP is configured; actual delivery is untested. Auth `site_url` still points to localhost, so the verified Production origin and callback allowlist must be configured before rollout. Vercel access remains unconfirmed, PR #12 is unmerged and the application candidate is not deployed. The founder said they had not seen the policy proposals: retention, free-trial scope, support hours and quality coverage are not accepted. Representative-user sessions, recurring backups/purges/alerts, operations drills and erasure enablement remain open. No overall phase is newly marked DONE from database completion alone.
+
+Earlier dated evidence below records previous checkpoints; this current section supersedes their live-schema/history/off-site status.
 
 ## Evidence already available
 
@@ -20,7 +28,7 @@ Founder accepted support/privacy and service-delivery ownership. Coverage, mailb
 
 | Phase | Remaining execution | Pass evidence | Accountable role to name |
 |---|---|---|---|
-| 0 | Production DB and Storage backup/restore; schema reconciliation; security fixes | Recovery record, reviewed delta, advisor/Auth results | Release operator and recovery owner |
+| 0 | ✅ Snapshot recovery, canonical live schema/history and function fixes DONE; finish Production callback/delivery checks and Free password-security gate | Recovery and upgrade records; remaining Auth results | Release operator and recovery owner |
 | 1 | Accepted notice/retention, support exception procedure, deployed erasure | Published notice version, successful synthetic erasure/retry, candidate UAT | Privacy/support owner |
 | 2 | Candidate scenario walkthrough | UAT C04 | Product owner |
 | 3 | Candidate opportunity walkthrough | UAT C05 | Product owner |

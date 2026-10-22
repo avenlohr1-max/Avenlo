@@ -1,6 +1,12 @@
 # Phase 9 — whole-suite readiness
 
-Updated: 22 October 2026, 01:22 IST. Status: ✅ automated engineering verification/tooling DONE; overall Phase 9 awaits production and operational gates. Public rollout held.
+Updated: 22 October 2026, 18:17 IST. Status: ✅ automated engineering verification/tooling and Production database/history/function security DONE; overall Phase 9 awaits application release, Auth and operational/user acceptance gates. Public rollout held.
+
+## Latest verified release candidate
+
+CI [#280](https://github.com/avenlohr1-max/Avenlo/actions/runs/39779306761) passed both jobs on `a3a01b2d61a40c7205bfdf1ceaa1806fe8af8e84`: 88 tests, six SQL suites including explicit provider-default grant reproduction, build, public smoke, synthetic recovery and the authenticated Auth/API/Storage journey. The Production database has 36 canonical history entries, 33 public tables with RLS, private Storage and zero public SECURITY DEFINER functions callable by browser roles. Main upgrade data preservation and maintenance teardown passed. Fresh encrypted off-site snapshots and the earlier hosted recovery drill are recorded in `production-upgrade-evidence.md` and `production-backup-recovery-evidence.md`.
+
+The application candidate is not deployed; PR #12 is unmerged. Auth `site_url` remains localhost, password minimum is now eight and configured Resend delivery needs testing. Leaked-password protection remains open on Free. Retention/service proposals are not accepted; representative-user sessions, actual support/quality coverage and recurring backup/purge/alert operations remain open. Earlier dated engineering checkpoints below are historical.
 
 ## Verified engineering evidence
 
@@ -41,14 +47,14 @@ The founder chose to remain on Supabase Free. Official password-security documen
 4. Production readiness tracker cites the latest passing commit/run. Earlier green runs do not validate later changes.
 5. A synthetic database backup/restore drill verifies restored row counts, policies, candidate isolation, Storage privacy and restricted audit/function privileges. It validates the disposable tooling path; it is not evidence of an off-site production backup or production recovery timing.
 
-The disposable CI stack is a temporary test fixture, not a separate staging deployment. Its seed script refuses non-loopback URLs. No production secrets are needed. Duplicate historical migration prefixes are replayed explicitly only against an empty test database; this does not reconcile production migration history.
+The disposable CI stack is a temporary test fixture, not a separate staging deployment. Its seed script refuses non-loopback URLs. No production secrets are needed. CI now replays canonical timestamp migrations; checksum mappings preserve the archived legacy files. Production adoption/execution was separately verified rather than inferred from clean replay.
 
 ## Production and operational acceptance gates
 
 | Gate | Evidence needed | Current constraint |
 |---|---|---|
 | Backup and recovery | Encrypted off-site snapshot, recoverable key and verified hosted logical recovery with measured exercise | ✅ Snapshot drill DONE 22 October; 41-table data/schema/grant/service checks and teardown passed. See `production-backup-recovery-evidence.md`; recurring operations/fresh pre-release capture remain |
-| Schema baseline | Read-only live comparison, reviewed delta and canonical migration history | Initial application comparison and 34-file local delta passed; history/role/Auth-trigger reconciliation and final review pending |
+| Schema baseline | Read-only live comparison, reviewed delta and canonical migration history | ✅ DONE: initial equivalence/adoption, 34 executed forward files plus security fix; 36 live history entries |
 | Auth security | Owner confirms leaked-password protection and production Auth configuration; advisors rechecked | Founder stays on Free; leaked-password protection requires Pro or above and remains open |
 | Direct production release | Exact release SHA, reviewed migration bundle, preflight, smoke evidence and rollback owner | PR #12 is review code; no deployment performed |
 | Erasure enablement | Auth/Storage journey green, paid-order exception and concurrency policy accepted | Production flag remains disabled pending remaining gates |

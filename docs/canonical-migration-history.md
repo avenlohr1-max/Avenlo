@@ -1,6 +1,8 @@
 # Canonical database migration history
 
-Prepared: 22 October 2026. Status: release preparation; this document alone does not establish live execution.
+Updated: 22 October 2026, 18:17 IST. Status: ✅ canonical Production adoption and execution verified; remaining application/Auth/operational acceptance gates stay open.
+
+Live execution: the initial mapped version was adopted after equivalence checks, the 34 subsequent mapped files actually executed, and the additional `production_function_access_controls` migration applied. There are now 36 live entries; the mapped historical prefix remains 35 entries and future files follow it. Readback and original-row preservation are recorded in `production-upgrade-evidence.md`. This does not assert application deployment or user acceptance.
 
 ## Why the filenames changed
 

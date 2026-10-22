@@ -78,6 +78,9 @@ $$;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO anon, authenticated;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO anon, authenticated;
+-- Match Supabase's explicit function defaults, not just PostgreSQL's PUBLIC
+-- default. Forward hardening must revoke direct grants as well.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon, authenticated, service_role;
 
 GRANT USAGE ON SCHEMA auth, storage, public TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION auth.uid() TO PUBLIC;

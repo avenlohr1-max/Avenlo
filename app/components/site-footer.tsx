@@ -13,16 +13,16 @@ export function SiteFooter() {
           <div>
             <span>Explore</span>
             <Link href="/about">About Avenlo</Link>
-            <Link href="/#why-avenlo">Why Avenlo</Link>
+            <Link href="/products">Our ten products</Link>
             <Link href="/#how-it-works">How it works</Link>
-            <Link href="/pricing">Pricing</Link>
+            <Link href="/pricing">Candidate plans</Link>
           </div>
           <div>
             <span>Get started</span>
-            <Link href="/companies">For companies</Link>
+            <Link href="/companies">Register employer interest</Link>
             <Link href="/join">For candidates</Link>
             <Link href="/login">Sign in</Link>
-            <Link href="/amaan">Amaan Makhdoom Ghori</Link>
+            <Link href="/founders">Meet the founder</Link><Link href="/team">Executive team</Link>
           </div>
           <div>
             <span>Company &amp; support</span>

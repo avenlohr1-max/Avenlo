@@ -1,43 +1,27 @@
 import Link from "next/link";
-import styles from "./pricing.module.css";
-
-export const metadata = { title: "Pricing — Avenlo" };
-
-const INDIA = [
-  { name: "Basic", price: "Free", period: "Ongoing", description: "Stay visible to Avenlo and maintain your career profile.", features: ["Resume and profile workspace", "Core skills signal", "Career profile editing", "Relevant opportunities when available"] },
-  { name: "Avenlo Intelligence", price: "₹1,999", period: "6 months", description: "Deeper career intelligence with human review and priority consideration.", features: ["Deeper talent assessment", "Skills and experience analysis", "Strengths and gaps", "Role and industry fit", "Career positioning and profile optimization", "Human review and priority consideration"], featured: true },
-  { name: "Executive", price: "₹7,999", period: "6 months", description: "High-touch career positioning and dedicated human support.", features: ["Everything in Intelligence", "Personalized career positioning", "Dedicated human review", "Priority matching", "Interview preparation and feedback", "Company representation", "Post-interview support"] },
+import { SiteHeader } from "../components/site-header";
+import { SiteFooter } from "../components/site-footer";
+import s from "../experience.module.css";
+export const metadata = { title: "Candidate plans — Avenlo" };
+type Plan = {name:string;price:string;description:string;features:string[];featured?:boolean};
+const india: Plan[] = [
+  {name:"Basic",price:"Free",description:"Begin with your professional record.",features:["Profile and resume workspace","Review and correct recorded skills","Relevant opportunities when available"]},
+  {name:"Intelligence",price:"₹1,999",description:"Bring human perspective to your experience.",features:["Professional profile review","Skills and experience analysis","Strengths, gaps and career positioning","Human review and intelligence reporting"],featured:true},
+  {name:"Executive",price:"₹7,999",description:"Personalized positioning and human support.",features:["Applicable Intelligence services","Dedicated human review / advisor support","Priority matching consideration","Interview preparation and feedback","Company representation and post-interview support"]},
 ];
-
-const INTERNATIONAL = [
-  { name: "Basic", price: "Free", period: "Ongoing", description: "Stay visible to Avenlo and maintain your career profile.", features: ["Resume and profile workspace", "Core skills signal", "Career profile editing", "Relevant opportunities when available"] },
-  { name: "Intelligence", price: "$100", period: "6 months", description: "Deeper talent intelligence, positioning and human review.", features: ["Deeper talent assessment", "Skills and experience analysis", "Strengths and gaps", "Role and industry fit", "Career positioning", "Human review and priority consideration"], featured: true },
-  { name: "Premium", price: "$399", period: "6 months", description: "Enhanced international positioning and global career support.", features: ["Enhanced international positioning", "Global profile support", "Cross-market career strategy", "Interview support", "Related premium services"] },
-  { name: "Executive", price: "$799", period: "6 months", description: "High-touch international career positioning and dedicated support.", features: ["Everything in Intelligence", "Personalized career positioning", "Dedicated human review", "Priority matching", "Interview preparation and feedback", "Company representation", "Post-interview support"] },
+const international: Plan[] = [
+  {...india[0]},
+  {...india[1],price:"$100"},
+  {name:"Premium",price:"$399",description:"An additional level of international support.",features:["Six-month service period","Detailed Premium deliverables confirmed before purchase","Contact Avenlo to discuss the scope"]},
+  {...india[2],price:"$799"},
 ];
-
-function Plan({ plan }: { plan: (typeof INDIA)[number] }) {
-  return <article className={plan.featured ? styles.featured : styles.card}>
-    {plan.featured && <span className={styles.featuredTag}>MOST CHOSEN</span>}
-    <span className={styles.planLabel}>{plan.name.toUpperCase()}</span>
-    <h2>{plan.price}</h2><span className={styles.period}>{plan.period}</span>
-    <p className={styles.desc}>{plan.description}</p>
-    <ul>{plan.features.map(f => <li key={f}>✓ {f}</li>)}</ul>
-    <Link className={plan.name === "Basic" ? styles.secondary : styles.primary} href="/join">{plan.name === "Basic" ? "Create a profile" : "Get started"}</Link>
-  </article>;
+function PlanCard({plan}:{plan:Plan}) {
+  return <article className={`${s.plan} ${plan.featured?s.planFeatured:""}`}><small>{plan.featured?"HUMAN-REVIEWED INTELLIGENCE":"CANDIDATE PLAN"}</small><h3>{plan.name}</h3><div className={s.price}>{plan.price}</div><p>{plan.name==="Basic"?"Ongoing free access":"One payment · 6 months · No auto-renewal"}</p><p>{plan.description}</p><ul>{plan.features.map(f=><li key={f}>{f}</li>)}</ul><Link className={s.primary} href={plan.name==="Basic"?"/join":"/contact"}>{plan.name==="Basic"?"Start free ↗":"Discuss this plan →"}</Link></article>;
 }
-
-export default function PricingPage() {
-  return <main className={styles.page}>
-    <header className={styles.header}>
-      <Link href="/" className={styles.back}>← Avenlo</Link>
-      <div><span className={styles.eyebrow}>AVENLO CANDIDATE SERVICES</span><h1>Choose the level of support you need.</h1></div>
-      <p>Paid services are defined service periods designed to improve your career signal and Avenlo's ability to work on your behalf. At launch, paid services do not automatically renew.</p>
-    </header>
-    <section className={styles.notice}><strong>India</strong><span>Candidate pricing for the India professional market.</span></section>
-    <section className={styles.grid}>{INDIA.map(plan => <Plan key={plan.name} plan={plan} />)}</section>
-    <section className={styles.notice}><strong>International</strong><span>Candidate pricing for international professional markets. Applicable market classification is confirmed within the candidate experience.</span></section>
-    <section className={styles.grid}>{INTERNATIONAL.map(plan => <Plan key={plan.name} plan={plan} />)}</section>
-    <section className={styles.legal}><h2>Before you purchase</h2><p>The final checkout step shows the applicable service terms, refund and cancellation policy, price, currency and service period before payment. Avenlo does not guarantee an interview, offer, placement or other specific career outcome.</p><p className={styles.muted}>Questions about services or pricing: <a href="mailto:support@avenlo.in">support@avenlo.in</a>.</p></section>
-  </main>;
+export default function Pricing() {
+  return <main className={s.experience}><SiteHeader /><header className={s.pageHero}><div><span className={s.kicker}>CANDIDATE PLANS</span><h1>Start with your story.<br />Choose your level of support.</h1><p>Create a free professional record. When you need deeper guidance, choose a defined six-month human service. Paid plans do not automatically renew at launch.</p><div className={s.actions}><a className={s.textLink} href="#india">India plans ↓</a><a className={s.textLink} href="#international">International plans ↓</a></div></div></header>
+  <section className={s.section} id="india"><span className={s.kicker}>INDIA PROFESSIONAL MARKET</span><h2>Make your next move with clarity.</h2><div className={s.planGrid}>{india.map(p=><PlanCard key={p.name} plan={p}/>)}</div><p className={s.notice}>Your market is confirmed from your current professional location and working market. Nationality or phone country code alone does not determine your plan market.</p></section>
+  <section className={s.tinted} id="international"><div className={s.section}><span className={s.kicker}>INTERNATIONAL PROFESSIONAL MARKETS</span><h2>Support for your professional direction.</h2><div className={s.planGrid}>{international.map(p=><PlanCard key={p.name} plan={p}/>)}</div></div></section>
+  <section className={s.section}><span className={s.kicker}>PRODUCTS AND ACCESS</span><h2>A connected workspace.<br />A clear service agreement.</h2><div className={s.tableScroll}><table><caption>How Avenlo workspaces and advisory services fit together</caption><thead><tr><th scope="col">Workspace</th><th scope="col">How access works</th></tr></thead><tbody><tr><th scope="row">Record, signals and capabilities</th><td>Maintain your information and review your evidence in your candidate account.</td></tr><tr><th scope="row">Scenarios and opportunities</th><td>Explore directions and available suggestions; the account shows the tools available to you.</td></tr><tr><th scope="row">Rooms, proof and dossiers</th><td>Access follows the relevant invitation, consent and active conversation.</td></tr><tr><th scope="row">Human Intelligence Services</th><td>Service deliverables and advisor involvement follow the scope agreed before activation.</td></tr><tr><th scope="row">Role Intelligence Studio</th><td>Employer workspace, available after team-led company onboarding.</td></tr></tbody></table></div><p className={s.notice}>Paid advisory services do not guarantee an interview, offer, placement or compensation outcome. Final deliverables, price, currency, tax treatment, activation, expiry and applicable refund terms must be shown and accepted before payment. This page does not activate a service or start a subscription.</p></section>
+  <section className={s.tinted}><div className={s.section}><div className={s.faq}><span className={s.kicker}>QUESTIONS, ANSWERED</span><h2>Know what you are choosing.</h2><details><summary>Will my paid plan renew automatically?</summary><p>No. Paid candidate plans run for six months and do not automatically renew at launch.</p></details><details><summary>Does payment guarantee a job?</summary><p>No. You purchase the specified service and support. Candidate willingness, role requirements and human hiring decisions determine outcomes.</p></details><details><summary>What is included in Premium?</summary><p>The international Premium price is $399 for six months. Ask Avenlo for the detailed service scope before purchasing; this scope must be confirmed before activation.</p></details><details><summary>How do employer fees work?</summary><p>Employers register interest and receive their commercial terms privately during onboarding. Employer fees are separate from candidate service purchases.</p></details><details><summary>Where can I request cancellation or a refund?</summary><p>Read the <Link href="/refunds">refund and cancellation policy</Link> and contact <a href="mailto:support@avenlo.in">support@avenlo.in</a>. Eligibility depends on the applicable terms and rights.</p></details></div></div></section><SiteFooter /></main>;
 }

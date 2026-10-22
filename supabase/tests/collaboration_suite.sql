@@ -226,7 +226,7 @@ reset role;
 select set_config('request.jwt.claim.sub', '', true);
 insert into auth.users(id,email,raw_user_meta_data) values ('b5000000-0000-0000-0000-000000000001','company-signup@example.test','{"account_type":"company","role":"founder"}');
 do $$ begin
-  if not exists(select 1 from public.profiles where id = 'b5000000-0000-0000-0000-000000000001' and role = 'company') then raise exception 'company signup regressed or accepted privileged metadata'; end if;
+  if not exists(select 1 from public.profiles where id = 'b5000000-0000-0000-0000-000000000001' and role = 'candidate') then raise exception 'public signup accepted employer or privileged metadata'; end if;
   if has_function_privilege('authenticated','public.current_user_role()','execute') or has_function_privilege('anon','public.handle_new_user()','execute') then raise exception 'public definer privileges regressed'; end if;
 end $$;
 rollback;

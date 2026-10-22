@@ -1,0 +1,13 @@
+[build]
+  command = "pnpm build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "24"
+  NETLIFY_NEXT_SKEW_PROTECTION = "true"
+
+# Netlify automatically provisions the maintained OpenNext adapter.
+# Production secrets belong in Netlify environment settings, never in this file.
+
+[functions."retention"]
+  schedule = "0 2 * * *"

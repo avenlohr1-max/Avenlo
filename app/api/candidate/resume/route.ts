@@ -7,7 +7,7 @@ import { extractCandidateProfile } from "@/lib/resume-profile";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MAX_SIZE = 10 * 1024 * 1024;
+const MAX_SIZE = 400 * 1024;
 const ALLOWED_TYPES = new Set([
   "application/pdf",
   "application/msword",
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const file = form.get("file");
     if (!(file instanceof File)) return NextResponse.json({ error: "Choose a resume file first." }, { status: 400 });
-    if (file.size > MAX_SIZE) return NextResponse.json({ error: "Resume must be 10 MB or smaller." }, { status: 400 });
+    if (file.size > MAX_SIZE) return NextResponse.json({ error: "Resume must be 400 KB or smaller on the current Free rollout. Use a text-based PDF or compact DOCX, or add your experience manually." }, { status: 400 });
 
     const extension = file.name.split(".").pop()?.toLowerCase() || "";
     if (!ALLOWED_EXTENSIONS.has(extension) || !ALLOWED_TYPES.has(file.type)) {
@@ -129,6 +129,12 @@ export async function POST(request: Request) {
       preferences: mergedPreferences,
     }, { onConflict: "user_id" });
     if (candidateError) throw new Error(`Resume was uploaded but professional details could not be imported: ${candidateError.message}`);
+
+    // Retain the new active resume, then remove only the candidate's obsolete
+    // canonical format variants. Never remove unrelated folder contents.
+    const obsolete = ["pdf", "doc", "docx"].filter((item) => item !== extension).map((item) => `${user.id}/resume.${item}`);
+    const cleanup = await supabase.storage.from("candidate-documents").remove(obsolete);
+    if (cleanup.error) console.error("Resume variant cleanup requires retry", { userId: user.id });
 
     const existingSkillSet = new Set((skills ?? []).map((item) => item.skill.toLowerCase()));
     const newSkills = extractedProfile.skills.filter((skill) => !existingSkillSet.has(skill.toLowerCase())).map((skill) => ({ user_id: user.id, skill: skill.trim() })).filter((item) => item.skill);

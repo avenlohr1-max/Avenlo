@@ -8,14 +8,16 @@ import { ApplicationReview } from "./application-review";
 import { ProfileStatusControl } from "./profile-status-control";
 import { ReportStatusControl } from "./report-status-control";
 import { SignOutButton } from "@/app/components/sign-out-button";
+import { RoleBriefView } from "@/app/components/role-brief-view";
+import { type RoleDefinition } from "@/lib/role-definition";
 
 type CompanyRelation = { name?: string } | Array<{ name?: string }> | null;
 
-function Stat({ label, value, tone = "default" }: { label: string; value: number; tone?: "default" | "blue" | "green" | "amber" }) {
+function Stat({ label, value, tone = "default" }: { label: string; value: number | null; tone?: "default" | "blue" | "green" | "amber" }) {
   return (
     <div className={`ops-stat ops-stat--${tone}`}>
       <span>{label}</span>
-      <strong>{value}</strong>
+      <strong>{value ?? "—"}</strong>
     </div>
   );
 }
@@ -39,20 +41,25 @@ export default async function StaffWorkspace() {
   // The database role remains the actual authorization check.
   if (current?.role !== "staff" && current?.role !== "founder") redirect("/admin/login");
 
-  const [{ data: users }, { data: candidates }, { data: companies }, { data: jobs }, { data: applications }, { data: reports }, { data: auditLogs }] = await Promise.all([
+  const [{ data: users }, { data: candidates }, { data: companies }, { data: jobs }, { data: applications }, { data: reports }, { data: auditLogs }, userTotal, activeTotal, openTotal, pendingTotal, reportTotal] = await Promise.all([
     supabase.from("profiles").select("id, full_name, email, role, status, created_at").order("created_at", { ascending: false }).limit(100),
     supabase.from("profiles").select("id, full_name, headline, location, status").eq("role", "candidate").order("created_at", { ascending: false }).limit(50),
     supabase.from("companies").select("id, name, industry, location, owner_id, created_at").order("created_at", { ascending: false }).limit(50),
-    supabase.from("jobs").select("id, title, status, company_id, expires_at, companies(name)").order("created_at", { ascending: false }).limit(50),
+    supabase.from("jobs").select("id, title, description, status, company_id, expires_at, role_brief_revision, role_definition_snapshot, companies(name)").order("created_at", { ascending: false }).limit(50),
     supabase.from("applications").select("id, candidate_id, job_id, status, match_score, created_at").order("created_at", { ascending: false }).limit(50),
     supabase.from("moderation_reports").select("id, reporter_id, target_type, target_id, reason, status, created_at").order("created_at", { ascending: false }).limit(50),
     supabase.from("audit_logs").select("id, actor_id, action, entity_type, entity_id, metadata, created_at").order("created_at", { ascending: false }).limit(50),
+    supabase.from("profiles").select("id", { count: "exact", head: true }),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", "active"),
+    supabase.from("jobs").select("id", { count: "exact", head: true }).eq("status", "open"),
+    supabase.from("applications").select("id", { count: "exact", head: true }).in("status", ["submitted", "pending"]),
+    supabase.from("moderation_reports").select("id", { count: "exact", head: true }),
   ]);
 
-  const reportCount = reports?.length ?? 0;
-  const activeUsers = users?.filter((profile) => profile.status === "active").length ?? 0;
-  const openJobs = jobs?.filter((job) => job.status === "open").length ?? 0;
-  const pendingApplications = applications?.filter((application) => application.status === "submitted" || application.status === "pending").length ?? 0;
+  const reportCount = reportTotal.count;
+  const activeUsers = activeTotal.count;
+  const openJobs = openTotal.count;
+  const pendingApplications = pendingTotal.count;
   const displayName = current?.full_name || user.email?.split("@")[0] || "Founder";
 
   return (
@@ -68,6 +75,10 @@ export default async function StaffWorkspace() {
               <b>{current?.role === "founder" ? "Founder" : "Staff"}</b>
             </div>
             <Link className="ops-header__link" href="/dashboard">Candidate view</Link>
+            <Link className="ops-header__link" href="/staff/opportunities">Curate opportunities</Link>
+            <Link className="ops-header__link" href="/staff/directory">Search people &amp; companies</Link><Link className="ops-header__link" href="/staff/employers">Employer onboarding</Link>
+            <Link className="ops-header__link" href="/staff/roles">Review role briefs</Link>
+            <Link className="ops-header__link" href="/staff/services">Human service cases</Link>
             <SignOutButton />
           </div>
         </div>
@@ -89,7 +100,7 @@ export default async function StaffWorkspace() {
           </div>
 
           <div className="ops-stats">
-            <Stat label="Total users" value={users?.length ?? 0} tone="blue" />
+            <Stat label="Total users" value={userTotal.count} tone="blue" />
             <Stat label="Active users" value={activeUsers} tone="green" />
             <Stat label="Open roles" value={openJobs} />
             <Stat label="Pending applications" value={pendingApplications} tone="amber" />
@@ -101,11 +112,11 @@ export default async function StaffWorkspace() {
       <section className="ops-content ops-container">
         <div className="ops-section-head">
           <div><p className="ops-kicker">PEOPLE</p><h2>Users & candidates</h2></div>
-          <p>Review account status and candidate context without leaving operations.</p>
+          <p>Recent records are shown below. <Link href="/staff/directory">Search the complete people and company directory →</Link></p>
         </div>
 
         <div className="ops-panel">
-          <div className="ops-panel__head"><div><strong>All users</strong><span>{users?.length ?? 0} records</span></div><span className="ops-status-chip">Live</span></div>
+          <div className="ops-panel__head"><div><strong>Recent users</strong><span>Latest 12 accounts · <Link href="/staff/directory">View all</Link></span></div><span className="ops-status-chip">Live</span></div>
           <div className="ops-table-wrap">
             <div className="ops-table ops-table--users">
               <div className="ops-table__row ops-table__row--head"><span>User</span><span>Role</span><span>Status</span><span>Created</span><span>Action</span></div>
@@ -125,7 +136,7 @@ export default async function StaffWorkspace() {
 
         <div className="ops-grid ops-grid--two">
           <div className="ops-panel">
-            <div className="ops-panel__head"><div><strong>Candidates</strong><span>{candidates?.length ?? 0} profiles</span></div></div>
+            <div className="ops-panel__head"><div><strong>Recent candidates</strong><span>Latest 6 · <Link href="/staff/directory?role=candidate">View all</Link></span></div></div>
             <div className="ops-list">
               {(candidates ?? []).slice(0, 6).map((candidate) => (
                 <article className="ops-list-item" key={candidate.id}>
@@ -139,7 +150,7 @@ export default async function StaffWorkspace() {
           </div>
 
           <div className="ops-panel">
-            <div className="ops-panel__head"><div><strong>Companies</strong><span>{companies?.length ?? 0} accounts</span></div></div>
+            <div className="ops-panel__head"><div><strong>Recent companies</strong><span>Latest 6 · <Link href="/staff/directory?kind=companies">View all</Link></span></div></div>
             <div className="ops-list">
               {(companies ?? []).slice(0, 6).map((company) => (
                 <article className="ops-list-item" key={company.id}>
@@ -166,7 +177,7 @@ export default async function StaffWorkspace() {
                 const companyName = Array.isArray(companiesRelation) ? companiesRelation[0]?.name : companiesRelation?.name;
                 return <article className="ops-list-item ops-list-item--action" key={job.id}>
                   <span className="ops-icon">↗</span>
-                  <div><strong>{job.title}</strong><p>{companyName || "Company"}</p>{job.expires_at ? <small>Expires {new Date(job.expires_at).toLocaleDateString()}</small> : null}</div>
+                  <div><strong>{job.title}</strong><p>{companyName || "Company"}</p>{job.expires_at ? <small>Expires {new Date(job.expires_at).toLocaleDateString()}</small> : null}<details><summary>Review role content{job.role_brief_revision ? ` · Definition revision ${job.role_brief_revision}` : ""}</summary>{job.role_definition_snapshot ? <RoleBriefView definition={job.role_definition_snapshot as RoleDefinition} /> : <p>{job.description}</p>}</details></div>
                   <div className="ops-item-action"><span className={`ops-pill ops-pill--${job.status}`}>{job.status}</span><JobModeration jobId={job.id} status={job.status} /></div>
                 </article>;
               })}

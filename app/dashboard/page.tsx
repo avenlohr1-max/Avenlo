@@ -41,8 +41,9 @@ export default async function Dashboard() {
           <nav className={styles.nav} aria-label="Candidate navigation">
             <Link className={styles.activeNav} href="/dashboard">Overview</Link>
             <Link href="/dashboard/profile">My profile</Link>
-            <Link href="/dashboard/recommendations">Recommendations</Link>
-            <Link href="/dashboard/applications">My opportunities</Link>
+            <Link href="/dashboard/recommendations">Opportunities</Link>
+            <Link href="/dashboard/applications">My applications</Link>
+            <Link href="/dashboard/rooms">Decision rooms</Link>
             <SignOutButton />
           </nav>
         </div>
@@ -58,14 +59,14 @@ export default async function Dashboard() {
               <p>Build a stronger career signal once. Avenlo uses it to understand your strengths, recommend learning and surface relevant opportunities for you.</p>
               <div className={styles.heroActions}>
                 <Link className="btn btn--primary" href="/dashboard/profile">{completion < 100 ? "Complete my profile" : "Review my profile"}</Link>
-                <Link className="btn" href="/dashboard/recommendations">See how recommendations work</Link>
+                <Link className="btn" href="/dashboard/recommendations">Review opportunities</Link>
                 <Link className="btn" href="/pricing">View Avenlo services</Link>
               </div>
             </div>
             <div className={styles.readiness}>
               <div className={styles.readinessTop}><span>PROFILE READINESS</span><strong>{completion}%</strong></div>
               <div className={styles.progress}><span style={{ width: `${completion}%` }} /></div>
-              <p>{ready ? "Your profile has enough signal for meaningful Avenlo recommendations." : "A few more details will make Avenlo's recommendations more useful."}</p>
+              <p>{ready ? "Review your record and keep its details accurate before sharing." : "Add missing details and correct your record before sharing."}</p>
               <Link href="/dashboard/profile">{ready ? "Review your profile →" : "Finish your profile →"}</Link>
             </div>
           </div>
@@ -75,10 +76,13 @@ export default async function Dashboard() {
       <section className={styles.content}>
         <div className={styles.sectionHeading}>
           <div><span className={styles.eyebrow}>CAREER INTELLIGENCE</span><h2>Your career toolkit</h2></div>
-          <p>Three practical tools help you improve the signal Avenlo uses. Automated checks support the team; human judgement stays at the centre.</p>
+          <p>Review your career record, explore next steps and share selected evidence. Human judgment stays at the centre.</p>
         </div>
 
         <div className={styles.toolGrid}>
+          <Link href="/dashboard/rooms" className={styles.tool}><span className={styles.toolLabel}>MUTUAL DECISION ROOM</span><h3>Discuss the work together</h3><p>Invite one employer, ask questions and keep next steps and a source-linked Decision Dossier in one place.</p><span className={styles.toolLink}>Open decision rooms →</span></Link>
+          <Link href="/dashboard/proofs" className={styles.tool}><span className={styles.toolLabel}>PROOF STUDIO</span><h3>Share only what you approve</h3><p>Prepare, redact and preview a snapshot from confirmed evidence. Share with one room and withdraw access when needed.</p><span className={styles.toolLink}>Prepare proof →</span></Link>
+          <Link href="/dashboard/services" className={styles.tool}><span className={styles.toolLabel}>HUMAN INTELLIGENCE SERVICES</span><h3>Get a scoped professional review</h3><p>Ask a career or evidence question, agree on the scope and keep corrections visible.</p><span className={styles.toolLink}>Request a review →</span></Link>
           <Link href="/dashboard/resume" className={`${styles.tool} ${styles.toolFeatured}`}>
             <span className={styles.toolIcon}>CV</span><span className={styles.toolLabel}>RESUME CHECKER</span>
             <h3>{hasResume ? "Review your resume signal" : "Upload and check your resume"}</h3>
@@ -86,16 +90,28 @@ export default async function Dashboard() {
             <span className={styles.toolLink}>{hasResume ? "Run checker →" : "Upload resume →"}</span>
           </Link>
           <Link href="/dashboard/skills" className={styles.tool}>
-            <span className={styles.toolIcon}>SK</span><span className={styles.toolLabel}>SKILLS CHECKER</span>
-            <h3>{skillCount ? `${skillCount} skills on file` : "Understand your skill profile"}</h3>
-            <p>See your strengths, skill coverage and the areas worth developing next for your target direction.</p>
-            <span className={styles.toolLink}>Check my skills →</span>
+            <span className={styles.toolIcon}>SK</span><span className={styles.toolLabel}>CAPABILITY ATLAS</span>
+            <h3>{skillCount ? `${skillCount} skills on file` : "Review your capability record"}</h3>
+            <p>Review saved skills separately from resume terms. Extracted mentions are prompts to check, not proof of ability.</p>
+            <span className={styles.toolLink}>Review capabilities →</span>
+          </Link>
+          <Link href="/dashboard/signals" className={styles.tool}>
+            <span className={styles.toolIcon}>SL</span><span className={styles.toolLabel}>SIGNAL LEDGER</span>
+            <h3>Keep evidence connected to its source</h3>
+            <p>Record what happened, where the information came from, and what remains uncertain. Correct entries and review their history.</p>
+            <span className={styles.toolLink}>Open Signal Ledger →</span>
           </Link>
           <Link href="/dashboard/courses" className={styles.tool}>
             <span className={styles.toolIcon}>LP</span><span className={styles.toolLabel}>COURSE ADVISER</span>
             <h3>Build your next learning step</h3>
             <p>Get focused learning paths based on your current skills, experience and career direction — not a generic course list.</p>
             <span className={styles.toolLink}>Get learning guidance →</span>
+          </Link>
+          <Link href="/dashboard/scenarios" className={styles.tool}>
+            <span className={styles.toolIcon}>SC</span><span className={styles.toolLabel}>CAREER SCENARIO LAB</span>
+            <h3>Explore possible next roles</h3>
+            <p>Compare up to three candidate-defined role scenarios. Keep assumptions, evidence, unknowns, and next steps visible.</p>
+            <span className={styles.toolLink}>Open Scenario Lab →</span>
           </Link>
         </div>
 
@@ -104,9 +120,9 @@ export default async function Dashboard() {
             <div className={styles.panelTop}><div><span className={styles.eyebrow}>RECOMMENDATIONS</span><h2>We bring opportunities to you.</h2></div><span className={styles.badge}>NO JOB BOARD</span></div>
             <div className={styles.recommendationBox}>
               <div className={styles.recommendationIcon}>A</div>
-              <div><h3>Avenlo works behind the scenes.</h3><p>We use your profile, resume and skills to identify relevant opportunities. You do not need to browse jobs or manage applications here.</p><div className={styles.chips}><span>Understand</span><span>Recommend</span><span>Connect</span></div></div>
+              <div><h3>Review suggestions on your terms.</h3><p>Explore role information and Avenlo’s reasoning, link evidence you have confirmed, and keep private notes before choosing your next step.</p><div className={styles.chips}><span>Review</span><span>Question</span><span>Choose</span></div></div>
             </div>
-            <Link className={styles.textLink} href="/dashboard/recommendations">Explore the recommendation workflow →</Link>
+            <Link className={styles.textLink} href="/dashboard/recommendations">Open Opportunity Intelligence →</Link>
           </article>
           <aside className={styles.panel}>
             <span className={styles.eyebrow}>PROFILE SIGNAL</span><h2>What Avenlo knows</h2>

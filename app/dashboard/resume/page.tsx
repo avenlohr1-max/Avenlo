@@ -88,7 +88,7 @@ export default function ResumeCheckerPage() {
         <section className={styles.card}>
           <h2>Resume file</h2>
           <p>Keep one current CV on your profile. Avenlo stores it privately and analyzes only the signals needed for your career workflow.</p>
-          <div className={styles.upload}><input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" disabled={uploading} onChange={(event) => void upload(event.target.files?.[0])} />{state.resumePath ? <div className={styles.fileMeta}>✓ Resume on file{state.analysis?.fileName ? ` — ${state.analysis.fileName}` : ""}. Upload another to replace it.</div> : <div className={styles.fileMeta}>PDF, DOC or DOCX · maximum 10 MB · PDF/DOCX receive full text analysis</div>}</div>
+          <div className={styles.upload}><input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" disabled={uploading} onChange={(event) => void upload(event.target.files?.[0])} />{state.resumePath ? <div className={styles.fileMeta}>✓ Resume on file{state.analysis?.fileName ? ` — ${state.analysis.fileName}` : ""}. Upload another to replace it.</div> : <div className={styles.fileMeta}>PDF, DOC or DOCX · maximum 400 KB · PDF/DOCX receive full text analysis</div>}</div>
           {uploading ? <p className={styles.notice}>Uploading and reading your resume… this can take a few seconds for longer PDFs.</p> : null}
           {message ? <p className={styles.notice}>{message}</p> : null}
           {error ? <p className={styles.error} role="alert">{error}</p> : null}

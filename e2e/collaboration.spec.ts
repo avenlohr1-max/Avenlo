@@ -1,0 +1,128 @@
+import { expect, test, type Page } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
+import { execFileSync } from "node:child_process";
+
+test.describe("disposable authenticated suite", () => {
+  test.skip(process.env.AVENLO_LOCAL_INTEGRATION !== "true", "Requires disposable local Auth/Storage containers; never Production or shared Preview");
+  test.describe.configure({ retries: 0 });
+  async function login(page: Page, role: "candidate" | "company" | "staff") {
+    await page.goto(role === "staff" ? "/admin/login" : "/login");
+    await page.getByLabel("Email", { exact: true }).fill(`avenlo-e2e-${role}@example.test`);
+    await page.getByLabel("Password", { exact: true }).fill(process.env.AVENLO_E2E_PASSWORD!);
+    await page.getByRole("button", { name: role === "staff" ? "Enter operations" : "Sign in", exact: true }).click({ timeout: 30_000 });
+    await page.waitForURL(role === "staff" ? "**/staff" : role === "company" ? "**/company" : "**/dashboard", { timeout: 30_000 });
+  }
+  test("candidate preview, employer conversation, dossier export, service consent and complete erasure", async ({ browser }) => {
+    test.setTimeout(180_000);
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    expect(["127.0.0.1", "localhost"]).toContain(new URL(url).hostname);
+    const candidateContext = await browser.newContext({ baseURL: "http://127.0.0.1:3000" });
+    const employerContext = await browser.newContext({ baseURL: "http://127.0.0.1:3000" });
+    const staffContext = await browser.newContext({ baseURL: "http://127.0.0.1:3000" });
+    const candidate = await candidateContext.newPage();
+    const employer = await employerContext.newPage();
+    const staff = await staffContext.newPage();
+    const publicClient = createClient(url, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
+    const signedIn = await publicClient.auth.signInWithPassword({ email: "avenlo-e2e-candidate@example.test", password: process.env.AVENLO_E2E_PASSWORD! });
+    expect(signedIn.error).toBeNull();
+    const staleToken = signedIn.data.session!.access_token;
+    const candidateId = signedIn.data.user!.id;
+    const upload = await publicClient.storage.from("candidate-documents").upload(`${candidateId}/resume.pdf`, new Blob(["%PDF-1.4\nsynthetic disposable resume"], { type: "application/pdf" }));
+    expect(upload.error).toBeNull();
+    await login(candidate, "candidate");
+    await candidate.goto("/dashboard/rooms");
+    await candidate.getByLabel("Employer through its open role").selectOption(process.env.AVENLO_E2E_JOB_ID!);
+    await candidate.getByLabel("Room title").fill("Synthetic mutual discussion");
+    await candidate.getByLabel("Name to show in this room").fill("Synthetic Candidate");
+    await candidate.getByLabel("Purpose and boundaries").fill("Clarify reporting scope; share only approved evidence");
+    await candidate.getByRole("checkbox").check();
+    await candidate.getByRole("button", { name: "Create a 30-day room" }).click();
+    await candidate.waitForURL(/\/dashboard\/rooms\/[a-f0-9-]+$/, { timeout: 30_000 });
+    const roomPath = new URL(candidate.url()).pathname;
+    await login(employer, "company");
+    await employer.goto(roomPath);
+    await expect(employer.getByRole("heading", { name: "Synthetic mutual discussion" })).toBeVisible();
+    await expect(employer.getByText("No proof snapshots are currently shared.")).toBeVisible();
+    await candidate.goto(`/dashboard/proofs?signal=${process.env.AVENLO_E2E_SIGNAL_ID}`);
+    await candidate.getByLabel("Snapshot title").fill("Redacted reporting project");
+    await candidate.getByLabel(/What was redacted/).fill("Client details excluded");
+    await candidate.getByLabel("Intended recipient room").selectOption(roomPath.split("/").at(-1)!);
+    await candidate.getByRole("button", { name: "Save private snapshot and preview" }).click();
+    await expect(candidate.getByRole("heading", { name: "Review exactly what will be shared" })).toBeVisible();
+    await employer.reload();
+    await expect(employer.getByText("No proof snapshots are currently shared.")).toBeVisible();
+    await candidate.getByRole("button", { name: "Approve this exact snapshot and share with this room" }).click();
+    await expect(candidate.getByRole("status")).toContainText("Saved");
+    await employer.reload();
+    await expect(employer.getByRole("heading", { name: "Redacted reporting project" })).toBeVisible();
+    await employer.getByLabel("Message shared with the other participant").fill("Which reporting outcomes did you own?");
+    await employer.getByRole("button", { name: "Post message" }).click();
+    await expect(employer.getByText("Which reporting outcomes did you own?", { exact: true })).toBeVisible();
+    await employer.getByLabel("Entry type").selectOption("human_judgment");
+    await employer.getByLabel("Your reasoning, correction or question").fill("Discuss ownership before reaching a conclusion.");
+    await employer.getByRole("button", { name: "Add to dossier" }).click();
+    await expect(employer.getByText("Discuss ownership before reaching a conclusion.", { exact: true })).toBeVisible();
+    const exportResponse = await employer.request.get(`${roomPath}/export`);
+    expect(exportResponse.status()).toBe(200);
+    const exported = await exportResponse.json();
+    expect(exported.proof_snapshots[0].redaction_note).toBe("Client details excluded");
+    expect(exported.entries[0].kind).toBe("human_judgment");
+    expect(exported.proof_snapshots[0]).not.toHaveProperty("signal_id");
+    await candidate.goto("/dashboard/services");
+    await candidate.getByLabel("Question, intended outcome and boundaries").fill("Review my reporting career options; no private ledger access");
+    await candidate.getByRole("checkbox").check();
+    await candidate.getByRole("button", { name: "Send service request" }).click();
+    await expect(candidate.getByText("Review my reporting career options; no private ledger access", { exact: true })).toBeVisible();
+    await login(staff, "staff");
+    await staff.goto("/staff/services");
+    await expect(staff.getByText("Review my reporting career options; no private ledger access", { exact: true })).toBeVisible();
+    await staff.getByLabel("Scope, outcome, escalation or closure reason").fill("We will clarify options in a scoped discussion.");
+    await staff.getByRole("checkbox").check();
+    await staff.getByRole("button", { name: "Assign to me and update case" }).click();
+    await expect(staff.getByRole("status")).toContainText("Saved");
+    await candidate.reload();
+    await expect(candidate.getByText(/Latest staff scope/)).toContainText("scoped discussion");
+    await candidate.getByRole("button", { name: "Withdraw staff access and close" }).click();
+    await expect(candidate.getByRole("button", { name: "Withdraw staff access and close" })).toHaveCount(0);
+    await staff.reload();
+    await expect(staff.getByText("No service cases are available.")).toBeVisible();
+    await candidate.goto(roomPath);
+    await candidate.getByRole("button", { name: "Withdraw employer access now" }).click();
+    await candidate.waitForURL("**/dashboard/rooms?result=saved", { timeout: 30_000 });
+    await employer.goto(roomPath);
+    await expect(employer.getByRole("heading", { name: /could not be found/i })).toBeVisible();
+    expect((await employer.request.get(`${roomPath}/export`)).status()).toBe(404);
+    const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
+    const dbUrl = process.env.AVENLO_LOCAL_DB_URL!;
+    expect(["127.0.0.1", "localhost"]).toContain(new URL(dbUrl).hostname);
+    // Inject a real cleanup failure in the disposable DB only. No application
+    // fault switch or production test backdoor is introduced.
+    const sql = (statement: string) => execFileSync("psql", [dbUrl, "-v", "ON_ERROR_STOP=1", "-c", `set lock_timeout = '5s'; set statement_timeout = '10s'; ${statement}`], { stdio: "pipe", timeout: 20_000 });
+    sql("create function private.e2e_block_storage_delete() returns trigger language plpgsql as $$ begin raise exception 'synthetic cleanup failure'; end $$; create trigger e2e_block_storage_delete before delete on storage.objects for each row execute function private.e2e_block_storage_delete();");
+    try {
+      const failedDeletion = await candidate.request.delete("/api/candidate/account", { headers: { Origin: "http://127.0.0.1:3000" }, data: { confirmation: "DELETE", password: process.env.AVENLO_E2E_PASSWORD } });
+      expect(failedDeletion.status(), JSON.stringify(await failedDeletion.json())).toBe(503);
+      expect((await admin.auth.admin.getUserById(candidateId)).data.user?.id).toBe(candidateId);
+      const retained = await admin.storage.from("candidate-documents").list(candidateId);
+      expect(retained.data?.some(item => item.name === "resume.pdf")).toBe(true);
+    } finally {
+      sql("drop trigger e2e_block_storage_delete on storage.objects; drop function private.e2e_block_storage_delete();");
+    }
+    await login(candidate, "candidate");
+    await candidate.goto("/dashboard/account");
+    await candidate.getByLabel("Current password").fill(process.env.AVENLO_E2E_PASSWORD!);
+    await candidate.getByLabel("Type DELETE to confirm").fill("DELETE");
+    await candidate.getByRole("button", { name: "Permanently delete my account" }).click();
+    await candidate.waitForURL("**/login?account=deleted", { timeout: 60_000 });
+    expect((await admin.auth.admin.getUserById(candidateId)).error).not.toBeNull();
+    const objects = await admin.storage.from("candidate-documents").list(candidateId);
+    expect(objects.error).toBeNull(); expect(objects.data).toHaveLength(0);
+    for (const table of ["profiles", "candidate_signals", "decision_rooms", "proof_packages", "intelligence_cases", "collaboration_events"]) {
+      const remaining = await admin.from(table).select("*", { count: "exact", head: true }).eq(table === "profiles" ? "id" : "candidate_id", candidateId);
+      expect(remaining.error).toBeNull(); expect(remaining.count).toBe(0);
+    }
+    const staleUpload = await fetch(`${url}/storage/v1/object/candidate-documents/${candidateId}/resume.pdf`, { method: "POST", headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${staleToken}`, "Content-Type": "application/pdf" }, body: "%PDF-1.4 stale session" });
+    expect(staleUpload.ok).toBe(false);
+    await candidateContext.close(); await employerContext.close(); await staffContext.close();
+  });
+});

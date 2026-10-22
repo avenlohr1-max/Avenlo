@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { JobCard } from "../job-card";
+import { RoleBriefView } from "@/app/components/role-brief-view";
+import { type RoleDefinition } from "@/lib/role-definition";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +19,8 @@ type JobRow = {
   experience_years: number | null;
   expires_at: string | null;
   companies: CompanyRelation;
+  role_definition_snapshot: RoleDefinition | null;
+  role_brief_revision: number | null;
 };
 
 export default async function CandidateJobDetails({ params }: { params: Promise<{ id: string }> }) {
@@ -30,8 +34,10 @@ export default async function CandidateJobDetails({ params }: { params: Promise<
 
   const { data: job } = await supabase
     .from("jobs")
-    .select("id, title, description, location, work_mode, seniority, experience_years, expires_at, companies(name)")
+    .select("id, title, description, location, work_mode, seniority, experience_years, expires_at, role_definition_snapshot, role_brief_revision, companies(name)")
     .eq("id", id)
+    .eq("status", "open")
+    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
     .maybeSingle();
 
   if (!job) notFound();
@@ -59,6 +65,7 @@ export default async function CandidateJobDetails({ params }: { params: Promise<
       <span className="eyebrow">{companyName || "AVENLO COMPANY"}</span>
       <h1>{row.title}</h1>
       <p>{row.description}</p>
+      {row.role_definition_snapshot && <section className="card"><h2>Reviewed role definition · Revision {row.role_brief_revision}</h2><RoleBriefView definition={row.role_definition_snapshot} /></section>}
       <div className="grid">
         <article className="card"><span className="eyebrow">LOCATION</span><h3>{row.location || "Flexible"}</h3></article>
         <article className="card"><span className="eyebrow">WORK MODE</span><h3>{row.work_mode || "Flexible"}</h3></article>

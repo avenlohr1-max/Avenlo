@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import styles from "./profile.module.css";
 
 type Profile = { full_name: string; phone: string; headline: string; location: string; bio: string };
-type Candidate = { experience_years: number | null; seniority: string; work_mode: string; industry: string; resume_path: string | null; preferences: Record<string, unknown> };
+type SharingEvent = { previous_value: boolean; new_value: boolean; changed_at: string };
+type Candidate = { experience_years: number | null; seniority: string; work_mode: string; industry: string; resume_path: string | null; share_with_applicant_companies: boolean; preferences: Record<string, unknown> };
 type Education = { id?: string; institution: string; degree: string; field_of_study: string; start_year: number | null; end_year: number | null; currently_studying: boolean };
 type Work = { id: string; company: string; title: string; location: string; start_year: number | null; end_year: number | null; currently_working: boolean; description: string };
 type ExtractedProfile = { full_name: string | null; email: string | null; phone: string | null; headline: string | null; location: string | null; bio: string | null; skills: string[]; target_roles: string[]; experience_years: number | null; seniority: string | null; education: Education[]; work_history: Work[] };
@@ -16,8 +17,9 @@ const emptyWork = (): Work => ({ id: crypto.randomUUID(), company: "", title: ""
 
 export default function CandidateProfilePage() {
   const [profile, setProfile] = useState<Profile>({ full_name: "", phone: "", headline: "", location: "", bio: "" });
-  const [candidate, setCandidate] = useState<Candidate>({ experience_years: null, seniority: "", work_mode: "", industry: "", resume_path: null, preferences: {} });
+  const [candidate, setCandidate] = useState<Candidate>({ experience_years: null, seniority: "", work_mode: "", industry: "", resume_path: null, share_with_applicant_companies: false, preferences: {} });
   const [education, setEducation] = useState<Education[]>([]);
+  const [sharingEvents, setSharingEvents] = useState<SharingEvent[]>([]);
   const [workHistory, setWorkHistory] = useState<Work[]>([]);
   const [skills, setSkills] = useState("");
   const [targetRoles, setTargetRoles] = useState("");
@@ -34,14 +36,16 @@ export default function CandidateProfilePage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { window.location.assign("/login"); return; }
-      const [{ data: profileData, error: profileError }, { data: candidateData }, { data: skillData }, { data: educationData }] = await Promise.all([
+      const [{ data: profileData, error: profileError }, { data: candidateData }, { data: skillData }, { data: educationData }, { data: sharingData }] = await Promise.all([
         supabase.from("profiles").select("full_name, phone, headline, location, bio").eq("id", user.id).single(),
-        supabase.from("candidate_profiles").select("experience_years, seniority, work_mode, industry, resume_path, preferences").eq("user_id", user.id).maybeSingle(),
+        supabase.from("candidate_profiles").select("experience_years, seniority, work_mode, industry, resume_path, share_with_applicant_companies, preferences").eq("user_id", user.id).maybeSingle(),
         supabase.from("candidate_skills").select("skill").eq("user_id", user.id).order("skill"),
         supabase.from("candidate_education").select("id, institution, degree, field_of_study, start_year, end_year, currently_studying").eq("user_id", user.id).order("start_year", { ascending: false }),
+        supabase.from("candidate_sharing_events").select("previous_value, new_value, changed_at").eq("candidate_id", user.id).order("changed_at", { ascending: false }).limit(10),
       ]);
       if (profileError) setError("Unable to load your profile. Please refresh and try again.");
       if (profileData) setProfile((current) => ({ ...current, ...profileData }));
+      setSharingEvents((sharingData ?? []) as SharingEvent[]);
       if (candidateData) {
         const normalized = candidateData as Candidate;
         normalized.preferences = normalized.preferences ?? {};
@@ -125,7 +129,7 @@ export default function CandidateProfilePage() {
       const skillList = [...new Set(skills.split(",").map((item) => item.trim().toLowerCase()).filter(Boolean))];
       const roleList = [...new Set(targetRoles.split(",").map((item) => item.trim()).filter(Boolean))];
       const nextPreferences = { ...candidate.preferences, target_roles: roleList, work_history: workHistory.map(({ id, ...row }) => ({ id, ...row })) };
-      const { error: candidateError } = await supabase.from("candidate_profiles").upsert({ user_id: user.id, experience_years: candidate.experience_years, seniority: candidate.seniority.trim() || null, work_mode: candidate.work_mode.trim() || null, industry: candidate.industry.trim() || null, resume_path: resumePath, preferences: nextPreferences }, { onConflict: "user_id" });
+      const { error: candidateError } = await supabase.from("candidate_profiles").upsert({ user_id: user.id, experience_years: candidate.experience_years, seniority: candidate.seniority.trim() || null, work_mode: candidate.work_mode.trim() || null, industry: candidate.industry.trim() || null, resume_path: resumePath, share_with_applicant_companies: candidate.share_with_applicant_companies, preferences: nextPreferences }, { onConflict: "user_id" });
       if (candidateError) throw new Error("Unable to save professional details.");
       const { error: deleteSkillError } = await supabase.from("candidate_skills").delete().eq("user_id", user.id);
       if (deleteSkillError) throw new Error("Unable to update skills.");
@@ -146,10 +150,10 @@ export default function CandidateProfilePage() {
 
   if (loading) return <main className={styles.page}><div className={styles.loading}>Loading your profile…</div></main>;
   return <main className={styles.page}>
-    <nav className={styles.nav}><Link href="/dashboard" className={styles.brand}><span className="brand-lockup brand-lockup--compact"><span className="brand-copy"><span className="brand-wordmark">AVENLO</span></span></span></Link><div className={styles.navActions}><Link className="btn btn--small" href="/dashboard">Dashboard</Link></div></nav>
-    <section className={styles.hero}><div className={styles.heroInner}><div className={styles.eyebrow}>CANDIDATE PROFILE</div><h1>Build the context behind your career.</h1><p>Upload your resume first. Avenlo will extract the useful career context for you to review, edit and add to — you stay in control of what becomes part of your profile.</p><div className={styles.heroMeta}><span>Resume-first</span><span>Editable anytime</span><span>Private profile</span></div></div></section>
+    <nav className={styles.nav}><Link href="/dashboard" className={styles.brand}><span className="brand-lockup brand-lockup--compact"><span className="brand-copy"><span className="brand-wordmark">AVENLO</span></span></span></Link><div className={styles.navActions}><Link className="btn btn--small" href="/dashboard/account">Account settings</Link><Link className="btn btn--small" href="/dashboard">Dashboard</Link></div></nav>
+    <section className={styles.hero}><div className={styles.heroInner}><div className={styles.eyebrow}>CANDIDATE PROFILE</div><h1>Build the context behind your career.</h1><p>Upload your resume first. Avenlo will extract the useful career context for you to review, edit and add to — you stay in control of what becomes part of your profile.</p><div className={styles.heroMeta}><span>Resume-first</span><span>Editable anytime</span><span>{candidate.share_with_applicant_companies ? "Shared with applied companies" : "Private by default"}</span></div></div></section>
     <form className={styles.form} onSubmit={save}>
-      <section className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>01 · RESUME IMPORT</span><h2>Start with your resume</h2><p>Upload your latest CV and Avenlo will extract your identity, skills, experience and education. Nothing is final until you review and save it.</p></div></div><div className={styles.resumeBox}><div><input className={styles.file} type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" disabled={importing || saving} onChange={(e) => void importResume(e.target.files?.[0] ?? null)} /><div className={styles.resumeMeta}><strong>{importing ? "Reading your resume…" : candidate.resume_path ? "Resume imported" : "No resume uploaded yet"}</strong><span>{importing ? "Extracting profile details and preparing them for review." : "PDF, DOC or DOCX · maximum 10 MB"}</span></div></div><Link href="/dashboard/resume" className={styles.resumeLink}>Open resume checker →</Link></div></section>
+      <section className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>01 · RESUME IMPORT</span><h2>Start with your resume</h2><p>Upload your latest CV and Avenlo will extract your identity, skills, experience and education. Nothing is final until you review and save it.</p></div></div><div className={styles.resumeBox}><div><input className={styles.file} type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" disabled={importing || saving} onChange={(e) => void importResume(e.target.files?.[0] ?? null)} /><div className={styles.resumeMeta}><strong>{importing ? "Reading your resume…" : candidate.resume_path ? "Resume imported" : "No resume uploaded yet"}</strong><span>{importing ? "Extracting profile details and preparing them for review." : "PDF, DOC or DOCX · maximum 400 KB"}</span></div></div><Link href="/dashboard/resume" className={styles.resumeLink}>Open resume checker →</Link></div></section>
 
       <section className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>02 · ABOUT YOU</span><h2>Review your profile basics</h2><p>These fields are pre-filled from your resume where possible. Edit anything that is wrong or add what the resume could not provide.</p></div></div><div className={styles.fieldGrid}>
         <Field label="Full name" required><input className={styles.input} required value={profile.full_name} onChange={(e) => setProfile({ ...profile, full_name: e.target.value })} /></Field>
@@ -159,7 +163,7 @@ export default function CandidateProfilePage() {
         <Field label="Professional summary" full><textarea className={styles.textarea} rows={5} value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder="Your strengths, focus areas, achievements and the direction you want to move toward." /></Field>
       </div></section>
 
-      <section className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>03 · CAREER</span><h2>Career context</h2><p>Review the signals Avenlo uses to understand seniority, fit and your preferred direction.</p></div></div><div className={styles.fieldGrid}>
+      <section className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>03 · SHARING</span><h2>Choose when companies can see your record</h2><p>Your profile stays private by default. Turn this on to let companies whose roles you apply to view your profile, career context and listed skills. You can change this setting whenever you want.</p></div></div><label className={styles.checkRow}><input type="checkbox" checked={candidate.share_with_applicant_companies} onChange={(e) => setCandidate({ ...candidate, share_with_applicant_companies: e.target.checked })} /> Share my Talent Record with companies I apply to</label>{sharingEvents.length > 0 && <ol className={styles.sharingHistory} aria-label="Sharing consent history">{sharingEvents.map((event, index) => <li key={`${event.changed_at}-${index}`}>{event.new_value ? "Sharing turned on" : "Sharing turned off"} · {new Date(event.changed_at).toLocaleString()}</li>)}</ol>}</section>\n\n      <section className={styles.section}><div className={styles.sectionHead}><div><span className={styles.eyebrow}>04 · CAREER</span><h2>Career context</h2><p>Review the signals Avenlo uses to understand seniority, fit and your preferred direction.</p></div></div><div className={styles.fieldGrid}>
         <Field label="Years of experience"><input className={styles.input} type="number" min="0" max="60" step="0.5" value={candidate.experience_years ?? ""} onChange={(e) => setCandidate({ ...candidate, experience_years: e.target.value ? Number(e.target.value) : null })} /></Field>
         <Field label="Seniority"><select className={styles.select} value={candidate.seniority} onChange={(e) => setCandidate({ ...candidate, seniority: e.target.value })}><option value="">Select seniority</option>{["Entry level","Junior","Mid-level","Senior","Lead","Manager","Director","Executive"].map((item) => <option key={item}>{item}</option>)}</select></Field>
         <Field label="Preferred work mode"><select className={styles.select} value={candidate.work_mode} onChange={(e) => setCandidate({ ...candidate, work_mode: e.target.value })}><option value="">Select work mode</option>{["Remote","Hybrid","On-site"].map((item) => <option key={item}>{item}</option>)}</select></Field>

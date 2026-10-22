@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main", "feature/avenlo-production"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "product/**", "fix/candidate-account-erasure"]
 
 permissions:
   contents: read
@@ -47,14 +47,21 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Verify canonical migration provenance
+        run: node scripts/verify-migration-map.mjs
+
       - name: Dependency audit
         run: npm audit --audit-level=high
 
       - name: Secret pattern scan
         shell: bash
         run: |
-          if git grep -nE 'SUPABASE_SERVICE_ROLE|service_role|BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY' -- . ':(exclude).git*'; then
-            echo "Potential secret material found in repository."
+          # Flag credential-shaped values, not legitimate server-side references to
+          # environment variable names or PostgreSQL's service_role grant.
+          if git grep -nEI \
+            '(BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY|sb_secret_[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{16,}|whsec_[A-Za-z0-9]{16,}|(SUPABASE_SERVICE_ROLE_KEY|RAZORPAY_KEY_SECRET|RESEND_API_KEY)[[:space:]]*[:=][[:space:]]*[^$[:space:]][^[:space:]]{19,})' \
+            -- . ':(exclude).git*' ':(exclude)package-lock.json'; then
+            echo "Potential hard-coded credential detected. Use repository or deployment secrets."
             exit 1
           fi
 
@@ -86,10 +93,107 @@ jobs:
           psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/rls_harness_setup.sql
           for migration in supabase/migrations/*.sql; do
             echo "Applying $migration"
-            psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f "$migration"
+            psql -h localhost -U postgres -d avenlo_test --single-transaction -v ON_ERROR_STOP=1 -f "$migration"
           done
 
       - name: Run RLS attack regression suite
         env:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/rls_attack_suite.sql
+
+      - name: Verify provider defaults and trusted payment function access
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/function_access_controls.sql
+
+      - name: Verify account-erasure cascades and deleted-session Storage denial
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/account_erasure.sql
+
+      - name: Verify opportunity curation, private decisions and confirmed evidence
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/opportunity_intelligence.sql
+
+      - name: Verify employer role ownership, revision history and human review
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/role_intelligence_studio.sql
+
+      - name: Verify integrated consent, collaboration, proof, dossiers and services
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/collaboration_suite.sql
+
+      - name: Practice synthetic backup and restore
+        env:
+          PGPASSWORD: postgres
+        shell: bash
+        run: |
+          pg_dump -h localhost -U postgres -d avenlo_test --no-owner -Fc -f "$RUNNER_TEMP/avenlo-synthetic.dump"
+          createdb -h localhost -U postgres avenlo_restore
+          pg_restore -h localhost -U postgres -d avenlo_restore --no-owner --exit-on-error "$RUNNER_TEMP/avenlo-synthetic.dump"
+          psql -h localhost -U postgres -d avenlo_restore -v ON_ERROR_STOP=1 -f supabase/tests/restore_assertions.sql
+          original=$(psql -h localhost -U postgres -d avenlo_test -Atc "select count(*) from public.profiles; select count(*) from storage.objects; select count(*) from pg_policies;")
+          restored=$(psql -h localhost -U postgres -d avenlo_restore -Atc "select count(*) from public.profiles; select count(*) from storage.objects; select count(*) from pg_policies;")
+          test "$original" = "$restored"
+          echo "Synthetic data, policy definitions and access boundaries restored. This is not a production backup verification."
+
+  authenticated-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      AVENLO_LOCAL_INTEGRATION: "true"
+      ENABLE_CANDIDATE_ACCOUNT_ERASURE: "true"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Start disposable Supabase Auth, API and Storage
+        shell: bash
+        run: |
+          # Start services without applying migrations, then replay the verified
+          # canonical sequence transactionally against this empty disposable DB.
+          mv supabase/migrations "$RUNNER_TEMP/avenlo-migrations"
+          npx --yes supabase@2.121.0 init
+          mkdir -p supabase/migrations
+          npx --yes supabase@2.121.0 start -x studio,imgproxy,realtime,postgres-meta,edge-runtime,logflare,vector,supavisor > "$RUNNER_TEMP/local-stack.log" 2>&1
+          mv "$RUNNER_TEMP/avenlo-migrations/"*.sql supabase/migrations/
+          npx --yes supabase@2.121.0 status -o env > "$RUNNER_TEMP/supabase.env"
+          set -a
+          source "$RUNNER_TEMP/supabase.env"
+          set +a
+          for name in ANON_KEY SERVICE_ROLE_KEY DB_URL; do
+            echo "::add-mask::${!name}"
+          done
+          echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+          echo "AVENLO_LOCAL_DB_URL=$DB_URL" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000" >> "$GITHUB_ENV"
+      - name: Replay schema in disposable Supabase and seed synthetic accounts
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          for migration in supabase/migrations/*.sql; do
+            echo "Applying $migration"
+            psql "$AVENLO_LOCAL_DB_URL" --single-transaction -v ON_ERROR_STOP=1 -f "$migration"
+          done
+          psql "$AVENLO_LOCAL_DB_URL" -c "NOTIFY pgrst, 'reload schema';"
+          node scripts/seed-local-integration.mjs
+      - name: Build against disposable Supabase
+        run: npm run build
+      - name: Install browser and run authenticated product and erasure journey
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test e2e/collaboration.spec.ts
+      - name: Stop disposable containers
+        if: always()
+        run: npx --yes supabase@2.121.0 stop --no-backup
+      - name: Show synthetic browser failure context
+        if: failure()
+        run: find test-results -name error-context.md -exec cat {} \;

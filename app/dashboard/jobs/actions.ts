@@ -16,6 +16,9 @@ export async function applyToJob(jobId: string) {
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
   if (profile?.role !== "candidate") return { ok: false, message: "Only candidate accounts can apply." };
 
+  const { data: job, error: roleError } = await supabase.from("jobs").select("status, expires_at").eq("id", parsed.data).maybeSingle();
+  if (roleError || !job || job.status !== "open" || (job.expires_at && new Date(job.expires_at).getTime() <= Date.now())) return { ok: false, message: "This role is no longer accepting applications." };
+
   const { error } = await supabase.from("applications").insert({ job_id: parsed.data, candidate_id: user.id });
   if (error) {
     if (error.code === "23505") return { ok: false, message: "You have already applied to this role." };

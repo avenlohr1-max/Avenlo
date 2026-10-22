@@ -19,6 +19,9 @@ function safeEqual(a: string, b: string) {
 }
 
 export async function POST(request: Request) {
+  if (!process.env.RAZORPAY_KEY_SECRET) {
+    return NextResponse.json({ error: "Payment verification is not configured." }, { status: 503 });
+  }
   try {
     const body = (await request.json()) as {
       orderId?: string;
@@ -75,7 +78,7 @@ export async function POST(request: Request) {
       if (error) return NextResponse.json({ error: "Unable to record legal acceptance." }, { status: 500 });
     }
 
-    const { data: activated, error: activationError } = await supabase.rpc(
+    const { data: activated, error: activationError } = await db.rpc(
       "settle_candidate_service_order",
       {
         p_order_id: order.id,

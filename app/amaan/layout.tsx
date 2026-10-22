@@ -3,12 +3,12 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Amaan Makhdoom Ghori — CEO & Founder, Avenlo",
   description: "Amaan Makhdoom Ghori, CEO & Founder of Avenlo. Building a more intelligent, human approach to talent.",
-  alternates: { canonical: "https://www.avenlo.in/amaan" },
+  alternates: { canonical: process.env.AVENLO_PORTALS_ENABLED === "true" ? "https://founders.avenlo.in" : "https://avenlo.in/amaan" },
   openGraph: {
     title: "Amaan Makhdoom Ghori — CEO & Founder, Avenlo",
     description: "Building a more intelligent, human approach to talent.",
     type: "profile",
-    url: "https://www.avenlo.in/amaan",
+    url: process.env.AVENLO_PORTALS_ENABLED === "true" ? "https://founders.avenlo.in" : "https://avenlo.in/amaan",
   },
 };
 

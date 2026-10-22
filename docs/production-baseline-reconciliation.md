@@ -1,5 +1,14 @@
 # Production baseline reconciliation evidence
 
+## Current hosting/Auth checkpoint — 22 October 2026, 18:48 IST
+
+✅ **Phase 0 delivery foundation DONE for the invitation-only pilot scope.** See [hosting and authentication evidence](production-hosting-auth-evidence.md). Vercel team Avenlo/project avenlo, verified `https://avenlo.in`, DNS, environment targets and read-only login responses are confirmed. Auth now uses that origin with exact callback/reset allowlist; the single approved recovery email arrived with SPF/DKIM/DMARC passing and the correct redirect. The link was not consumed and no password changed.
+
+The founder explicitly accepted unavailable leaked-password protection **for an invited pilot only**. The warning remains technically present; no paid upgrade or unrestricted public/paid release exception is approved. CI #281 passed both jobs on `8078b84d09189fa3c1a96b53fccd1a1f14ece2f8` (88 tests, six SQL suites). That candidate is a protected READY Preview sharing the Production database; no write UAT was run there. Production still serves older main `568e0dd795876d9e4f828da1b8b82f18282f6ffa`; PR #12 is unmerged and no candidate promotion occurred.
+
+**Phases 1–9 remain open overall.** The founder will review the retention/service proposal; it is not accepted. Actual support hours, independent quality review, representative-user acceptance, operational drills, recurring backup/purge/alerts, erasure enablement and first-cohort approval remain outstanding. Earlier dated observations below are historical and are superseded by this checkpoint where they describe missing Vercel access, localhost Auth, untested delivery or no pilot exception.
+
+
 Updated: 22 October 2026, 18:17 IST. Status: ✅ baseline reconciliation and Production suite database upgrade DONE; remaining Auth, application release and operational gates open. Public rollout held.
 
 ## Live execution closure

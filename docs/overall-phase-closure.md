@@ -1,5 +1,14 @@
 # Overall phase closure
 
+## Current hosting/Auth checkpoint — 22 October 2026, 18:48 IST
+
+✅ **Phase 0 delivery foundation DONE for the invitation-only pilot scope.** See [hosting and authentication evidence](production-hosting-auth-evidence.md). Vercel team Avenlo/project avenlo, verified `https://avenlo.in`, DNS, environment targets and read-only login responses are confirmed. Auth now uses that origin with exact callback/reset allowlist; the single approved recovery email arrived with SPF/DKIM/DMARC passing and the correct redirect. The link was not consumed and no password changed.
+
+The founder explicitly accepted unavailable leaked-password protection **for an invited pilot only**. The warning remains technically present; no paid upgrade or unrestricted public/paid release exception is approved. CI #281 passed both jobs on `8078b84d09189fa3c1a96b53fccd1a1f14ece2f8` (88 tests, six SQL suites). That candidate is a protected READY Preview sharing the Production database; no write UAT was run there. Production still serves older main `568e0dd795876d9e4f828da1b8b82f18282f6ffa`; PR #12 is unmerged and no candidate promotion occurred.
+
+**Phases 1–9 remain open overall.** The founder will review the retention/service proposal; it is not accepted. Actual support hours, independent quality review, representative-user acceptance, operational drills, recurring backup/purge/alerts, erasure enablement and first-cohort approval remain outstanding. Earlier dated observations below are historical and are superseded by this checkpoint where they describe missing Vercel access, localhost Auth, untested delivery or no pilot exception.
+
+
 Updated: 22 October 2026, 18:17 IST.
 
 Status: ✅ Production database/history and function-access hardening executed and verified; application deployment and human/operational acceptance remain open. Public rollout remains held. The founder chose to remain on Supabase Free on 21 October; leaked-password protection remains an explicit security gate because the provider requires Pro or above. No upgrade is authorized.
@@ -28,7 +37,7 @@ Founder accepted support/privacy and service-delivery ownership. Coverage, mailb
 
 | Phase | Remaining execution | Pass evidence | Accountable role to name |
 |---|---|---|---|
-| 0 | ✅ Snapshot recovery, canonical live schema/history and function fixes DONE; finish Production callback/delivery checks and Free password-security gate | Recovery and upgrade records; remaining Auth results | Release operator and recovery owner |
+| 0 | ✅ DONE — invited-pilot delivery foundation, 22 October 18:48 IST | Recovery, upgrade and hosting/Auth evidence; explicit pilot exception | Founder/release operator |
 | 1 | Accepted notice/retention, support exception procedure, deployed erasure | Published notice version, successful synthetic erasure/retry, candidate UAT | Privacy/support owner |
 | 2 | Candidate scenario walkthrough | UAT C04 | Product owner |
 | 3 | Candidate opportunity walkthrough | UAT C05 | Product owner |

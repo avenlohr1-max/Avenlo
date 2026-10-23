@@ -6,7 +6,7 @@ export function SiteFooter() {
     <footer className="site-footer">
       <div className="container site-footer__grid">
         <div>
-          <BrandLogo />
+          <BrandLogo light />
           <p>Talent intelligence built to support better human decisions.</p>
         </div>
         <div className="footer-links">
@@ -30,7 +30,8 @@ export function SiteFooter() {
             <Link href="/privacy">Privacy Policy</Link>
             <Link href="/terms">Terms &amp; Conditions</Link>
             <Link href="/refunds">Refund &amp; Cancellation</Link>
-            <a href="mailto:support@avenlo.in">support@avenlo.in</a>
+            <a href="mailto:candidates@avenlo.in">candidates@avenlo.in</a>
+            <a href="mailto:companies@avenlo.in">companies@avenlo.in</a>
             <a href="tel:+918074646755">+91 80746 46755</a>
           </div>
         </div>

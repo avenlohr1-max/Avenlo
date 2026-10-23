@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { BrandLogo } from "./brand-logo";
 const links = [
+  ["For candidates", "/candidates"],
   ["Products", "/products"],
-  ["How it works", "/#how-it-works"],
   ["Candidate plans", "/pricing"],
   ["For employers", "/companies"],
 ] as const;

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="120" viewBox="0 0 390 120" role="img" aria-labelledby="title desc">
+  <title id="title">Avenlo reversed logo</title>
+  <desc id="desc">The Avenlo Signal &amp; Match lockup for dark backgrounds.</desc>
+  <g transform="translate(0 6) scale(.38)">
+    <path d="M22 252 137 45C151 19 166 6 187 8c17 1 31 9 51 22l-134 223c-7 12-16 13-27 13H30c-10 0-14-7-8-14Z" fill="#FFFFFF"/>
+    <path d="m247 39 103 221h-41c-17 0-28-8-36-23l-59-104 33-94Z" fill="#44C9BE"/>
+    <circle cx="181" cy="201" r="28" fill="#B6E51F"/>
+  </g>
+  <text x="145" y="72" fill="#FFFFFF" font-family="Segoe UI,Arial,sans-serif" font-size="67" font-weight="650" letter-spacing="-1.5">Avenlo</text>
+  <text x="150" y="103" fill="#E7ECF3" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="400" letter-spacing="4.2">Signal &amp; Match</text>
+</svg>

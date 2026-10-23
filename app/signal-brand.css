@@ -1,0 +1,4 @@
+:root{--brand-navy:#102b5a;--brand-blue:#07988f;--brand-green:#b6e51f;--ink:#102b5a;--muted:#65748a;--line:#e6e3d9;--surface:#fbf9f2;--brand-glow:rgba(7,152,143,.14)}
+.brand-logo-image{display:block;max-width:100%;object-fit:contain;flex-shrink:0}
+.auth-shell__visual .brand-logo-image{filter:brightness(0) invert(1)}
+.btn--primary:hover{background:#067e77}.btn--primary{box-shadow:0 8px 24px #07988f22}

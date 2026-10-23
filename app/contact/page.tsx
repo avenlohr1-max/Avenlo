@@ -1,10 +1,9 @@
-import { SiteHeader } from "../components/site-header";
-import { SiteFooter } from "../components/site-footer";
+import { MarketingShell } from "@/app/components/marketing-shell";
 
-export default function ContactPage() {
-  return <main><SiteHeader />
-    <section className="company-hero"><div className="container company-hero__grid">
-      <div><span className="eyebrow">CONTACT AVENLO</span><h1>Start a conversation with the team.</h1><p>Whether you are exploring Avenlo as a candidate, company or partner, reach out and tell us what you need.</p><div className="company-hero__points"><span>✓ Candidate support</span><span>✓ Company enquiries</span><span>✓ General support</span></div></div>
-      <div className="inquiry-card"><span className="eyebrow">DIRECT CONTACT</span><h2>We’re here to help.</h2><p><strong>Email</strong><br/><a href="mailto:support@avenlo.in">support@avenlo.in</a></p><p><strong>Phone</strong><br/><a href="tel:+918074646755">+91 80746 46755</a></p><p><strong>Founder</strong><br/><a href="mailto:amaan@avenlo.in">amaan@avenlo.in</a></p><p className="form-note">For company hiring requirements, use the <a href="/companies">company enquiry form</a>.</p></div>
-    </div></section><SiteFooter /></main>;
+export const metadata = { title: "Contact Avenlo \u2014 Signal & Match" };
+
+export default function Page() {
+  return <MarketingShell><main id="top"><section className="contact-hero section-wrap"><p className="eyebrow"><span className="eyebrow-dot"></span> GET IN TOUCH</p><h1>Every good match starts with a <em>conversation.</em></h1><p className="hero-lede">Choose the path that fits you. Avenlo’s employer onboarding is invitation-only.</p></section>
+<section className="contact-grid section-wrap"><article className="contact-card contact-candidate"><span className="contact-index">01 / CANDIDATES</span><div className="contact-icon">01</div><h2>Looking for your next move?</h2><p>Start with the candidate pathway for an overview of Avenlo’s candidate-facing services.</p><a className="text-link" href="/candidates">Explore candidate information <span aria-hidden="true">↗</span></a></article><article className="contact-card contact-employer"><span className="contact-index">02 / EMPLOYERS</span><div className="contact-icon">02</div><h2>Hiring for your company?</h2><p>Register interest to discuss your hiring needs. Our team connects with you and onboards employers by invitation.</p><a className="text-link" href="/companies">Register employer interest <span aria-hidden="true">↗</span></a></article></section>
+<section className="contact-note section-wrap"><p className="eyebrow">PUBLIC CONTACT DETAILS</p><p><strong>Candidates:</strong> <a href="mailto:candidates@avenlo.in">candidates@avenlo.in</a><br /><strong>Companies:</strong> <a href="mailto:companies@avenlo.in">companies@avenlo.in</a><br /><strong>Founder:</strong> <a href="mailto:amaanghori@avenlo.in">amaanghori@avenlo.in</a></p><a href="https://avenlo.in">Visit avenlo.in <span aria-hidden="true">↗</span></a></section></main></MarketingShell>;
 }

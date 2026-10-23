@@ -1,19 +1,9 @@
-import Link from "next/link";
-import { SiteHeader } from "../components/site-header";
-import { SiteFooter } from "../components/site-footer";
+import { MarketingShell } from "@/app/components/marketing-shell";
 
-export default function AboutPage() {
-  return <main><SiteHeader />
-    <section className="section section--light"><div className="container company-principle">
-      <span className="eyebrow">ABOUT AVENLO</span>
-      <h1>Talent intelligence. Human decisions.</h1>
-      <p>Avenlo is a talent intelligence platform designed to help people and companies make better-informed professional decisions.</p>
-      <p>We bring together professional profile information, experience, skills, preferences, career direction and company requirements into clearer, structured signals. Technology helps organize the evidence; human judgment remains central to important talent decisions.</p>
-      <div className="principles-grid">
-        <article className="principle-card"><span>01</span><h3>Understand the person</h3><p>A richer professional profile goes beyond a résumé and captures context that matters to career decisions.</p></article>
-        <article className="principle-card"><span>02</span><h3>Understand the requirement</h3><p>Company needs are considered through skills, experience, context and role requirements.</p></article>
-        <article className="principle-card"><span>03</span><h3>Keep judgment human</h3><p>Avenlo surfaces useful signals and explainable context without treating technology as a replacement for people.</p></article>
-      </div>
-      <p style={{marginTop:"2rem"}}><Link className="btn btn--primary" href="/join">Build your Avenlo profile →</Link> <Link className="btn" href="/companies">Talk to Avenlo</Link></p>
-    </div></section><SiteFooter /></main>;
+export const metadata = { title: "About Avenlo \u2014 Signal & Match" };
+
+export default function Page() {
+  return <MarketingShell><main id="top"><section className="about-hero section-wrap"><div><p className="eyebrow"><span className="eyebrow-dot"></span> AVENLO · SIGNAL &amp; MATCH</p><h1>Good connections begin with a <em>clear signal.</em></h1><p className="hero-lede">Avenlo is a talent intelligence and hiring platform for candidates and employers. The Signal &amp; Match identity makes that connection visible.</p></div><div className="about-mark"><img src="/brand/avenlo-logo-primary.svg" alt="Avenlo Signal &amp; Match logo" /></div></section>
+<section className="brand-story"><div className="section-wrap brand-story-grid"><div><p className="eyebrow">THE MARK</p><h2>An open A.<br /><em>A point of connection.</em></h2></div><div><p>The Avenlo symbol begins with an open, upward form. Navy and teal give its two sides their own voice; the lime point marks the signal between them.</p><p>The wordmark and “Signal &amp; Match” signature bring that symbol together with the name and promise. The result is designed to work as a complete lockup or as a compact mark.</p></div></div></section>
+<section className="signal-products section-wrap"><p className="eyebrow">OUR PRINCIPLES</p><div className="signal-product-grid"><article><h2>Evidence with context.</h2><p>Your record, skills and work examples bring substance to career conversations.</p></article><article><h2>Human decisions.</h2><p>Technology organizes information. Candidates and employers retain judgment over their decisions.</p></article><article><h2>Sharing by choice.</h2><p>Candidates control which evidence they share in a conversation.</p></article><article><h2>A considered introduction.</h2><p>Employer access follows a conversation, verification and an invitation from Avenlo.</p></article></div></section><section className="next-step-band"><div className="section-wrap next-step-inner"><div><p className="eyebrow">SIGNAL &amp; MATCH</p><h2>Explore the Avenlo pathways.</h2></div><a className="button button-lime" href="/candidates">Explore Avenlo <span aria-hidden="true">↗</span></a></div></section></main></MarketingShell>;
 }

@@ -2,9 +2,9 @@ import { expect, test } from "@playwright/test";
 
 test("home page exposes primary navigation", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: /More than a résumé.*A clearer way forward/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Good matches start with a clearer signal/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" }).first()).toHaveAttribute("href", "/login");
-  await expect(page.getByRole("link", { name: /Build your free Talent Record/ }).first()).toHaveAttribute("href", "/join");
+  await expect(page.getByRole("link", { name: /Start free/ }).first()).toHaveAttribute("href", "/join");
 });
 
 test("login page exposes accessible credentials and recovery", async ({ page }) => {

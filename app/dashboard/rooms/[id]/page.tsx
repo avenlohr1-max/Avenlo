@@ -11,7 +11,7 @@ import styles from "@/app/components/collaboration.module.css";
 export default async function RoomWorkspace({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ result?: string }> }) {
   const { supabase, user, role } = await collaborationContext(["candidate", "company"]);
   const { id } = await params;
-  if (!z.string().uuid().safeParse(id).success) notFound();
+  if (!z.guid().safeParse(id).success) notFound();
   const roomResult = await supabase.from("decision_rooms").select("*").eq("id", id).maybeSingle();
   if (roomResult.error) return <CollaborationShell title="Room unavailable" intro="Unable to load this room."><p role="alert">Refresh to try again.</p></CollaborationShell>;
   if (!roomResult.data) notFound();

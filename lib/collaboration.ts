@@ -1,15 +1,15 @@
 import { z } from "zod";
 
-export const roomSchema = z.object({ jobId: z.string().uuid(), candidateLabel: z.string().trim().min(1).max(120), title: z.string().trim().min(1).max(160), purpose: z.string().trim().min(1).max(2000), consent: z.literal("yes") });
+export const roomSchema = z.object({ jobId: z.guid(), candidateLabel: z.string().trim().min(1).max(120), title: z.string().trim().min(1).max(160), purpose: z.string().trim().min(1).max(2000), consent: z.literal("yes") });
 export const proofSchema = z.object({
-  signalId: z.string().uuid(), sourceRevision: z.coerce.number().int().positive(), roomId: z.union([z.string().uuid(), z.literal("")]),
+  signalId: z.guid(), sourceRevision: z.coerce.number().int().positive(), roomId: z.union([z.guid(), z.literal("")]),
   title: z.string().trim().min(1).max(160), statement: z.string().trim().min(1).max(2000),
   source_label: z.string().trim().min(1).max(200), source_date: z.union([z.string().date(), z.literal("")]),
   context: z.string().trim().min(1).max(3000), uncertainty_note: z.string().trim().min(1).max(1500),
   redaction_note: z.string().trim().min(1).max(1000),
 });
-export const messageSchema = z.object({ roomId: z.string().uuid(), kind: z.enum(["question", "answer", "next_step", "correction"]), body: z.string().trim().min(1).max(3000) });
-export const dossierSchema = z.object({ roomId: z.string().uuid(), kind: z.enum(["evidence_reference", "human_judgment", "correction", "open_question", "next_step"]), body: z.string().trim().min(1).max(3000), proofId: z.union([z.string().uuid(), z.literal("")]) }).refine(value => (value.kind === "evidence_reference") === Boolean(value.proofId), "Only evidence references require a shared proof snapshot.");
+export const messageSchema = z.object({ roomId: z.guid(), kind: z.enum(["question", "answer", "next_step", "correction"]), body: z.string().trim().min(1).max(3000) });
+export const dossierSchema = z.object({ roomId: z.guid(), kind: z.enum(["evidence_reference", "human_judgment", "correction", "open_question", "next_step"]), body: z.string().trim().min(1).max(3000), proofId: z.union([z.guid(), z.literal("")]) }).refine(value => (value.kind === "evidence_reference") === Boolean(value.proofId), "Only evidence references require a shared proof snapshot.");
 export const serviceSchema = z.object({ service: z.enum(["career_review", "evidence_review", "decision_support"]), scope: z.string().trim().min(1).max(3000), consent: z.literal("yes") });
 export const serviceLabels: Record<string, string> = { career_review: "Career review", evidence_review: "Evidence review", decision_support: "Decision support" };
 export const proofFields = "id, candidate_id, room_id, title, statement, source_label, source_date, context, uncertainty_note, redaction_note, shared, captured_at";

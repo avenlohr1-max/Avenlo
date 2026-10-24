@@ -18,7 +18,7 @@ export async function prepareProof(form: FormData) {
 }
 export async function changeProofSharing(form: FormData) {
   const { supabase, user } = await collaborationContext(["candidate"]);
-  const parsed = z.object({ id: z.string().uuid(), operation: z.enum(["share", "withdraw", "delete"]) }).safeParse(Object.fromEntries(form));
+  const parsed = z.object({ id: z.guid(), operation: z.enum(["share", "withdraw", "delete"]) }).safeParse(Object.fromEntries(form));
   if (!parsed.success) redirect("/dashboard/proofs?result=invalid");
   const { id, operation } = parsed.data;
   const query = operation === "delete" ? supabase.from("proof_packages").delete() : supabase.from("proof_packages").update({ shared: operation === "share" });

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
 const schema = z.object({
-  applicationId: z.string().uuid(),
+  applicationId: z.guid(),
   status: z.enum(["submitted", "reviewing", "shortlisted", "rejected", "hired"]),
 });
 

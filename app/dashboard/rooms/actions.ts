@@ -17,7 +17,7 @@ export async function createRoom(form: FormData) {
 }
 export async function changeRoomAccess(form: FormData) {
   const { supabase, user } = await collaborationContext(["candidate"]);
-  const parsed = z.object({ id: z.string().uuid(), operation: z.enum(["withdraw", "delete"]) }).safeParse(Object.fromEntries(form));
+  const parsed = z.object({ id: z.guid(), operation: z.enum(["withdraw", "delete"]) }).safeParse(Object.fromEntries(form));
   if (!parsed.success) redirect("/dashboard/rooms?result=invalid");
   const query = parsed.data.operation === "delete" ? supabase.from("decision_rooms").delete() : supabase.from("decision_rooms").update({ active: false });
   const { data, error } = await query.eq("id", parsed.data.id).eq("candidate_id", user.id).select("id").maybeSingle();

@@ -9,7 +9,7 @@ import { collaborationContext } from "@/lib/collaboration-server";
 
 export async function proposeJobFromBrief(form: FormData) {
   const { supabase, user } = await collaborationContext(["company"]);
-  const parsed = z.object({ id: z.string().uuid(), revision: z.coerce.number().int().positive() }).safeParse(Object.fromEntries(form));
+  const parsed = z.object({ id: z.guid(), revision: z.coerce.number().int().positive() }).safeParse(Object.fromEntries(form));
   if (!parsed.success) redirect("/company/roles?result=invalid");
   const { data: brief, error: lookupError } = await supabase.from("employer_role_briefs").select("*").eq("id", parsed.data.id).eq("revision", parsed.data.revision).eq("status", "approved").maybeSingle();
   if (lookupError || !brief) redirect("/company/roles?result=error");
@@ -26,7 +26,7 @@ export async function saveRoleBrief(form: FormData) {
   if (!user) redirect("/login");
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
   if (profile?.role !== "company") redirect("/dashboard");
-  const identity = z.object({ companyId: z.string().uuid(), id: z.string().uuid().optional(), revision: z.coerce.number().int().positive().optional(), status: z.enum(["draft", "submitted"]) }).safeParse({
+  const identity = z.object({ companyId: z.guid(), id: z.guid().optional(), revision: z.coerce.number().int().positive().optional(), status: z.enum(["draft", "submitted"]) }).safeParse({
     companyId: form.get("companyId"), id: form.get("id") || undefined, revision: form.get("revision") || undefined, status: form.get("status"),
   });
   if (!identity.success) redirect("/company/roles?result=invalid");

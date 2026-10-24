@@ -5,16 +5,16 @@ import { createClient } from "@/lib/supabase/server";
 import { explainMatch } from "@/lib/matching";
 
 const jobActionSchema = z.object({
-  jobId: z.string().uuid(),
+  jobId: z.guid(),
   status: z.enum(["open", "closed", "paused"]),
 });
 
 const applicationMatchSchema = z.object({
-  applicationId: z.string().uuid(),
+  applicationId: z.guid(),
 });
 
 const profileStatusSchema = z.object({
-  userId: z.string().uuid(),
+  userId: z.guid(),
   status: z.enum(["draft", "active", "suspended", "archived"]),
 });
 
@@ -151,7 +151,7 @@ export async function updateReportStatus(input: {
   status: "open" | "reviewing" | "resolved" | "dismissed";
 }) {
   const parsed = z.object({
-    reportId: z.string().uuid(),
+    reportId: z.guid(),
     status: z.enum(["open", "reviewing", "resolved", "dismissed"]),
   }).safeParse(input);
 

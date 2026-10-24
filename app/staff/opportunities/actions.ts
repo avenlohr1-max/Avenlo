@@ -14,7 +14,7 @@ export async function curateOpportunity(form: FormData) {
   if (!user) redirect("/admin/login");
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
   if (profile?.role !== "staff" && profile?.role !== "founder") redirect("/admin/login");
-  const parsed = z.object({ candidateId: z.string().uuid(), jobId: z.string().uuid(), basis: z.enum(["title", "skills", "industry", "location", "work_mode", "seniority", "experience_years"]), note: z.string().trim().min(1).max(2000) }).safeParse({
+  const parsed = z.object({ candidateId: z.guid(), jobId: z.guid(), basis: z.enum(["title", "skills", "industry", "location", "work_mode", "seniority", "experience_years"]), note: z.string().trim().min(1).max(2000) }).safeParse({
     candidateId: form.get("candidateId"), jobId: form.get("jobId"), basis: form.get("basis"), note: form.get("note"),
   });
   if (!parsed.success) redirect("/staff/opportunities?result=invalid");

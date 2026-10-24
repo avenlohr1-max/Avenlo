@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const reportSchema = z.object({
   targetType: z.enum(["job", "candidate", "company", "application"]),
-  targetId: z.string().uuid(),
+  targetId: z.guid(),
   reason: z.string().trim().min(10).max(2000),
 });
 

@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
-const jobIdSchema = z.string().uuid();
+const jobIdSchema = z.guid();
 
 export async function applyToJob(jobId: string) {
   const parsed = jobIdSchema.safeParse(jobId);

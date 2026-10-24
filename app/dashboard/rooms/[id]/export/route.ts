@@ -5,7 +5,7 @@ import { exportDossier, roomIsActive, proofFields, type Room, type Proof, type E
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { supabase, user } = await collaborationContext(["candidate", "company"]);
   const { id } = await params;
-  if (!z.string().uuid().safeParse(id).success) return new Response("Unavailable", { status: 404 });
+  if (!z.guid().safeParse(id).success) return new Response("Unavailable", { status: 404 });
   const { data: room, error } = await supabase.from("decision_rooms").select("*").eq("id", id).maybeSingle();
   if (error || !room || !roomIsActive(room)) return new Response("Unavailable", { status: 404 });
   // Fail closed rather than silently truncate an exported record.

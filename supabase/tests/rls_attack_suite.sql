@@ -91,6 +91,27 @@ BEGIN
   IF n <> 1 THEN RAISE EXCEPTION 'candidate could not read own scenario evidence'; END IF;
   SELECT count(*) INTO n FROM public.candidate_scenario_evidence WHERE candidate_id = '10000000-0000-0000-0000-000000000002';
   IF n <> 0 THEN RAISE EXCEPTION 'candidate read another candidate scenario evidence'; END IF;
+  UPDATE public.profiles SET full_name = 'Candidate A reviewed'
+    WHERE id = '10000000-0000-0000-0000-000000000001';
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 1 THEN RAISE EXCEPTION 'candidate could not save own safe profile'; END IF;
+
+  -- A valid path must pass both the trigger and RLS; negative-only checks
+  -- missed the former reversed position() arguments.
+  UPDATE public.candidate_profiles
+    SET resume_path = '10000000-0000-0000-0000-000000000001/resume.pdf'
+    WHERE user_id = '10000000-0000-0000-0000-000000000001';
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 1 THEN RAISE EXCEPTION 'candidate could not save own resume path'; END IF;
+  blocked := false;
+  BEGIN
+    UPDATE public.candidate_profiles
+      SET resume_path = '10000000-0000-0000-0000-000000000002/resume.pdf'
+      WHERE user_id = '10000000-0000-0000-0000-000000000001';
+  EXCEPTION WHEN OTHERS THEN blocked := true;
+  END;
+  IF NOT blocked THEN RAISE EXCEPTION 'candidate stored another candidate resume path'; END IF;
+
   blocked := false;
   BEGIN
     INSERT INTO public.candidate_scenario_evidence (candidate_id, scenario_id, signal_id)

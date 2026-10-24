@@ -17,7 +17,7 @@ async function candidateContext() {
 
 export async function saveOpportunityDecision(form: FormData) {
   const { supabase, user } = await candidateContext();
-  const parsed = z.object({ opportunityId: z.string().uuid(), disposition: z.enum(["considering", "saved", "dismissed"]), note: z.string().trim().max(2000) }).safeParse({
+  const parsed = z.object({ opportunityId: z.guid(), disposition: z.enum(["considering", "saved", "dismissed"]), note: z.string().trim().max(2000) }).safeParse({
     opportunityId: form.get("opportunityId"), disposition: form.get("disposition"), note: form.get("note") ?? "",
   });
   if (!parsed.success) redirect(`${destination}?result=invalid`);
@@ -32,7 +32,7 @@ export async function saveOpportunityDecision(form: FormData) {
 
 export async function linkOpportunityEvidence(form: FormData) {
   const { supabase, user } = await candidateContext();
-  const parsed = z.object({ opportunityId: z.string().uuid(), signalId: z.string().uuid(), operation: z.enum(["link", "remove"]) }).safeParse({
+  const parsed = z.object({ opportunityId: z.guid(), signalId: z.guid(), operation: z.enum(["link", "remove"]) }).safeParse({
     opportunityId: form.get("opportunityId"), signalId: form.get("signalId"), operation: form.get("operation"),
   });
   if (!parsed.success) redirect(`${destination}?result=invalid`);

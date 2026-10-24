@@ -17,7 +17,7 @@ export default async function RoleReview({ searchParams }: { searchParams: Promi
   if (profile?.role !== "staff" && profile?.role !== "founder") redirect("/admin/login");
   const { data, error } = await supabase.from("employer_role_briefs").select("*, companies(name)").in("status", ["submitted", "approved"]).order("updated_at", { ascending: true }).limit(50);
   const { result, history: historyId } = await searchParams;
-  const validHistory = z.string().uuid().safeParse(historyId);
+  const validHistory = z.guid().safeParse(historyId);
   const history = validHistory.success ? await supabase.from("employer_role_brief_history").select("revision, changed_at, after_data").eq("brief_id", validHistory.data).order("revision", { ascending: false }).limit(20) : { data: [], error: null };
   const rows = (data ?? []) as (RoleBrief & { companies: { name: string } | { name: string }[] | null })[];
   return <main className="section section--light"><div className="container" style={{ maxWidth: 980 }}><Link href="/staff">← Operations workspace</Link><h1>Role definition review</h1>

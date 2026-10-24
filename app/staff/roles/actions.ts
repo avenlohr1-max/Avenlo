@@ -14,7 +14,7 @@ export async function reviewRoleBrief(form: FormData) {
   if (!user) redirect("/admin/login");
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
   if (profile?.role !== "staff" && profile?.role !== "founder") redirect("/admin/login");
-  const parsed = z.object({ id: z.string().uuid(), revision: z.coerce.number().int().positive(), status: z.enum(["approved", "changes_requested"]), note: z.string().trim().min(1).max(2000) }).safeParse({
+  const parsed = z.object({ id: z.guid(), revision: z.coerce.number().int().positive(), status: z.enum(["approved", "changes_requested"]), note: z.string().trim().min(1).max(2000) }).safeParse({
     id: form.get("id"), revision: form.get("revision"), status: form.get("status"), note: form.get("note"),
   });
   if (!parsed.success) redirect("/staff/roles?result=invalid");

@@ -44,11 +44,10 @@ export default function CandidateProfilePage() {
         supabase.from("candidate_sharing_events").select("previous_value, new_value, changed_at").eq("candidate_id", user.id).order("changed_at", { ascending: false }).limit(10),
       ]);
       if (profileError) setError("Unable to load your profile. Please refresh and try again.");
-      if (profileData) setProfile((current) => ({ ...current, ...profileData }));
+      if (profileData) setProfile({ full_name: profileData.full_name ?? "", phone: profileData.phone ?? "", headline: profileData.headline ?? "", location: profileData.location ?? "", bio: profileData.bio ?? "" });
       setSharingEvents((sharingData ?? []) as SharingEvent[]);
       if (candidateData) {
-        const normalized = candidateData as Candidate;
-        normalized.preferences = normalized.preferences ?? {};
+        const normalized: Candidate = { ...candidateData, seniority: candidateData.seniority ?? "", work_mode: candidateData.work_mode ?? "", industry: candidateData.industry ?? "", preferences: candidateData.preferences ?? {} };
         setCandidate(normalized);
         const prefs = normalized.preferences;
         const savedWork = Array.isArray(prefs.work_history) ? prefs.work_history : [];

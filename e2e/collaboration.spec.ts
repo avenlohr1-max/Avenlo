@@ -30,6 +30,12 @@ test.describe("disposable authenticated suite", () => {
     const upload = await publicClient.storage.from("candidate-documents").upload(`${candidateId}/resume.pdf`, new Blob(["%PDF-1.4\nsynthetic disposable resume"], { type: "application/pdf" }));
     expect(upload.error).toBeNull();
     await login(candidate, "candidate");
+    await candidate.goto("/dashboard/profile");
+    await candidate.getByRole("textbox", { name: "Professional headline", exact: true }).fill("Synthetic reporting analyst");
+    await candidate.getByRole("button", { name: "Save profile", exact: true }).click();
+    await expect(candidate.getByRole("status")).toContainText("saved");
+    await candidate.reload();
+    await expect(candidate.getByRole("textbox", { name: "Professional headline", exact: true })).toHaveValue("Synthetic reporting analyst");
     await candidate.goto("/dashboard/rooms");
     await candidate.getByLabel("Employer through its open role").selectOption(process.env.AVENLO_E2E_JOB_ID!);
     await candidate.getByLabel("Room title").fill("Synthetic mutual discussion");

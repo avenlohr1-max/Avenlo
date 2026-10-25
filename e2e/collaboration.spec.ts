@@ -30,7 +30,7 @@ test.describe("disposable authenticated suite", () => {
     const upload = await publicClient.storage.from("candidate-documents").upload(`${candidateId}/resume.pdf`, new Blob(["%PDF-1.4\nsynthetic disposable resume"], { type: "application/pdf" }));
     expect(upload.error).toBeNull();
     const { data: existingContext } = await publicClient.from("candidate_profiles").select("preferences").eq("user_id", candidateId).single();
-    const importContext = await publicClient.from("candidate_profiles").update({ preferences: { ...existingContext?.preferences, resume_import: { phone: "2024 - 2026", headline: "Unreviewed import", target_roles: ["Unreviewed role"], work_history: [{ company: "Unreviewed employer", title: "Imported role" }] } } }).eq("user_id", candidateId);
+    const importContext = await publicClient.from("candidate_profiles").upsert({ user_id: candidateId, preferences: { ...existingContext?.preferences, resume_import: { phone: "2024 - 2026", headline: "Unreviewed import", target_roles: ["Unreviewed role"], work_history: [{ company: "Unreviewed employer", title: "Imported role" }] } } });
     expect(importContext.error).toBeNull();
     const skill = await publicClient.from("candidate_skills").insert({ user_id: candidateId, skill: "sql" }).select("id").single();
     expect(skill.error).toBeNull();
@@ -157,3 +157,4 @@ test.describe("disposable authenticated suite", () => {
     await candidateContext.close(); await employerContext.close(); await staffContext.close();
   });
 });
+

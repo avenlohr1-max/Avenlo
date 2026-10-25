@@ -5,12 +5,13 @@ import { execFileSync } from "node:child_process";
 test.describe("disposable authenticated suite", () => {
   test.skip(process.env.AVENLO_LOCAL_INTEGRATION !== "true", "Requires disposable local Auth/Storage containers; never Production or shared Preview");
   test.describe.configure({ retries: 0 });
-  async function login(page: Page, role: "candidate" | "company" | "staff") {
-    await page.goto(role === "staff" ? "/admin/login" : "/login");
+  async function login(page: Page, role: "candidate" | "company" | "staff" | "founder") {
+    const internal = role === "staff" || role === "founder";
+    await page.goto(internal ? "/admin/login" : "/login");
     await page.getByLabel("Email", { exact: true }).fill(`avenlo-e2e-${role}@example.test`);
     await page.getByLabel("Password", { exact: true }).fill(process.env.AVENLO_E2E_PASSWORD!);
-    await page.getByRole("button", { name: role === "staff" ? "Enter operations" : "Sign in", exact: true }).click({ timeout: 30_000 });
-    await page.waitForURL(role === "staff" ? "**/staff" : role === "company" ? "**/company" : "**/dashboard", { timeout: 30_000 });
+    await page.getByRole("button", { name: internal ? "Enter operations" : "Sign in", exact: true }).click({ timeout: 30_000 });
+    await page.waitForURL(internal ? "**/staff" : role === "company" ? "**/company" : "**/dashboard", { timeout: 30_000 });
   }
   test("candidate preview, employer conversation, dossier export, service consent and complete erasure", async ({ browser }) => {
     test.setTimeout(180_000);
@@ -57,6 +58,26 @@ test.describe("disposable authenticated suite", () => {
     await expect(candidate.getByRole("status")).toContainText("signal linked");
     await candidate.reload();
     await expect(candidate.getByText("Every confirmed signal is already linked.")).toBeVisible();
+    await candidate.goto("/dashboard/payments");
+    await candidate.getByRole("button", { name: "Create sandbox request", exact: true }).click();
+    await expect(candidate.getByRole("status")).toContainText("Test request ready");
+    await candidate.getByRole("button", { name: "Submit simulated report", exact: true }).click();
+    await expect(candidate.getByRole("status")).toContainText("Report saved");
+    await expect(candidate.getByRole("heading", { name: "Reported — bank reconciliation pending" })).toBeVisible();
+    const founderContext = await browser.newContext({ baseURL: "http://127.0.0.1:3000" });
+    const founder = await founderContext.newPage();
+    await login(founder, "founder");
+    await founder.goto("/admin/payments");
+    await founder.getByRole("textbox", { name: "Review note", exact: true }).fill("Synthetic sandbox review. No money moved.");
+    await founder.getByRole("button", { name: "Confirm simulation", exact: true }).click();
+    await expect(founder.getByRole("status")).toContainText("Review saved");
+    await candidate.reload();
+    await expect(candidate.getByRole("heading", { name: "Simulation confirmed — no money moved" })).toBeVisible();
+    const serviceOrders = await publicClient.from("candidate_service_orders").select("id").eq("candidate_id", candidateId);
+    expect(serviceOrders.error).toBeNull();
+    expect(serviceOrders.data).toHaveLength(0);
+    await founder.screenshot({ path: "test-results/avenlo-payments-sandbox.png", fullPage: true });
+    await founderContext.close();
     await candidate.goto(`/dashboard/jobs/${process.env.AVENLO_E2E_JOB_ID}`);
     await candidate.getByRole("button", { name: "Apply", exact: true }).click();
     await expect(candidate.getByRole("button", { name: "Applied", exact: true })).toBeDisabled();
@@ -148,6 +169,8 @@ test.describe("disposable authenticated suite", () => {
     expect((await admin.auth.admin.getUserById(candidateId)).error).not.toBeNull();
     const objects = await admin.storage.from("candidate-documents").list(candidateId);
     expect(objects.error).toBeNull(); expect(objects.data).toHaveLength(0);
+    const paymentCleanup = await admin.from("avenlo_upi_requests").select("id").eq("owner_id", candidateId);
+    expect(paymentCleanup.error).toBeNull(); expect(paymentCleanup.data).toHaveLength(0);
     for (const table of ["profiles", "candidate_signals", "decision_rooms", "proof_packages", "intelligence_cases", "collaboration_events"]) {
       const remaining = await admin.from(table).select("*", { count: "exact", head: true }).eq(table === "profiles" ? "id" : "candidate_id", candidateId);
       expect(remaining.error).toBeNull(); expect(remaining.count).toBe(0);

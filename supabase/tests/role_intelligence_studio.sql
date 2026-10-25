@@ -114,6 +114,7 @@ $$;
 -- A queued revision writer must not insert history for the deleted brief.
 delete from public.jobs where company_id = '50000000-0000-0000-0000-000000000001';
 delete from public.profiles where id = '20000000-0000-0000-0000-000000000001';
+set constraints all immediate;
 do $$
 begin
   if exists(select 1 from public.companies where id = '50000000-0000-0000-0000-000000000001')

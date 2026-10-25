@@ -41,7 +41,7 @@ revoke all on public.avenlo_upi_requests, public.avenlo_upi_events from anon, au
 grant select on public.avenlo_upi_requests, public.avenlo_upi_events to authenticated;
 grant all on public.avenlo_upi_requests, public.avenlo_upi_events to service_role;
 create policy "owner or founder reads own payment requests" on public.avenlo_upi_requests for select to authenticated using (
-  exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.status not in ('suspended','archived'))
+  exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.status in ('draft','active'))
   and ((owner_id = (select auth.uid()) and (select private.current_user_role()) in ('candidate','founder'))
   or (select private.current_user_role()) = 'founder')
 );
@@ -54,7 +54,7 @@ create function public.create_avenlo_upi_request(p_owner_id uuid,p_mode text,p_p
 returns public.avenlo_upi_requests language plpgsql security definer set search_path='' as $$
 declare r public.avenlo_upi_requests; owner_role text; request_id uuid:=gen_random_uuid();
 begin
-  select role::text into owner_role from public.profiles where id=p_owner_id and status not in ('suspended','archived') for update;
+  select role::text into owner_role from public.profiles where id=p_owner_id and status in ('draft','active') for update;
   if owner_role not in ('candidate','founder') or owner_role is null then raise exception 'eligible account required'; end if;
   if p_mode not in ('sandbox','test') or p_mode is null then raise exception 'unsupported payment mode'; end if;
   if p_mode='test' and owner_role<>'founder' then raise exception 'personal UPI testing is founder only'; end if;
@@ -77,7 +77,7 @@ create function public.report_avenlo_upi_payment(p_request_id uuid,p_reference t
 returns void language plpgsql security definer set search_path='' as $$
 declare r public.avenlo_upi_requests;
 begin
-  if (select private.current_user_role()) not in ('candidate','founder') or auth.uid() is null or not exists(select 1 from public.profiles where id=auth.uid() and status not in ('suspended','archived')) then raise exception 'eligible account required'; end if;
+  if (select private.current_user_role()) not in ('candidate','founder') or auth.uid() is null or not exists(select 1 from public.profiles where id=auth.uid() and status in ('draft','active')) then raise exception 'eligible account required'; end if;
   select * into r from public.avenlo_upi_requests where id=p_request_id and owner_id=auth.uid() for update;
   if not found then raise exception 'request not found'; end if;
   if p_reference is null or btrim(p_reference) !~ '^[A-Za-z0-9-]{6,80}$' then raise exception 'valid reference required'; end if;
@@ -94,7 +94,7 @@ create function public.review_avenlo_upi_payment(p_request_id uuid,p_decision te
 returns void language plpgsql security definer set search_path='' as $$
 declare r public.avenlo_upi_requests;
 begin
-  if (select private.current_user_role()) is distinct from 'founder' or auth.uid() is null or not exists(select 1 from public.profiles where id=auth.uid() and status not in ('suspended','archived')) then raise exception 'founder required'; end if;
+  if (select private.current_user_role()) is distinct from 'founder' or auth.uid() is null or not exists(select 1 from public.profiles where id=auth.uid() and status in ('draft','active')) then raise exception 'founder required'; end if;
   select * into r from public.avenlo_upi_requests where id=p_request_id for update;
   if not found then raise exception 'request not found'; end if;
   if p_decision not in ('confirmed','rejected') or p_decision is null then raise exception 'invalid review'; end if;
@@ -120,7 +120,7 @@ create function public.request_avenlo_upi_refund(p_request_id uuid,p_reason text
 returns void language plpgsql security definer set search_path='' as $$
 declare r public.avenlo_upi_requests;
 begin
-  if (select private.current_user_role()) not in ('candidate','founder') or auth.uid() is null or not exists(select 1 from public.profiles where id=auth.uid() and status not in ('suspended','archived')) then raise exception 'eligible account required'; end if;
+  if (select private.current_user_role()) not in ('candidate','founder') or auth.uid() is null or not exists(select 1 from public.profiles where id=auth.uid() and status in ('draft','active')) then raise exception 'eligible account required'; end if;
   select * into r from public.avenlo_upi_requests where id=p_request_id and owner_id=auth.uid() for update;
   if not found or r.status<>'confirmed' or r.mode<>'test' then raise exception 'reconciled test payment required'; end if;
   if p_reason is null or length(btrim(p_reason)) not between 10 and 1000 then raise exception 'refund reason required'; end if;

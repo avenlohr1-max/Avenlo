@@ -81,14 +81,14 @@ do $$ begin
   if exists(select 1 from public.candidate_service_orders where payment_provider='avenlo_upi') then raise exception 'test activated service order'; end if;
   if (select count(*) from public.avenlo_upi_events where kind='refund_requested')<>1 then raise exception 'refund request not idempotent'; end if;
   if has_function_privilege('anon','public.report_avenlo_upi_payment(uuid,text)','execute') or has_table_privilege('anon','public.avenlo_upi_requests','select') then raise exception 'anonymous payment access'; end if;
-  update public.profiles set status='suspended' where id='40000000-0000-0000-0000-000000000001';
+  update public.profiles set status='archived' where id='40000000-0000-0000-0000-000000000001';
 end $$;
 set local role authenticated;
 do $$ begin
-  if exists(select 1 from public.avenlo_upi_requests) then raise exception 'suspended founder reads payments'; end if;
+  if exists(select 1 from public.avenlo_upi_requests) then raise exception 'archived founder reads payments'; end if;
   begin
-    perform public.review_avenlo_upi_payment(current_setting('avenlo.qa.second')::uuid,'rejected',null,null,null,null,false,'Suspended review must fail');
-    raise exception 'suspended founder reviewed payment';
-  exception when raise_exception then if sqlerrm='suspended founder reviewed payment' then raise; end if; end;
+    perform public.review_avenlo_upi_payment(current_setting('avenlo.qa.second')::uuid,'rejected',null,null,null,null,false,'Archived review must fail');
+    raise exception 'archived founder reviewed payment';
+  exception when raise_exception then if sqlerrm='archived founder reviewed payment' then raise; end if; end;
 end $$;
 rollback;

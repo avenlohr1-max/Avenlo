@@ -1,0 +1,12 @@
+Avenlo Payments — original implementation
+Copyright (c) 2026 Avenlo. All rights reserved.
+
+The original Avenlo Payments implementation in lib/payments/, the payment
+workspace components, payment pages, related SQL migration and tests is
+proprietary. No permission to reproduce, distribute, sublicense or operate
+this implementation for another organisation is granted by this notice.
+
+This notice covers only original Avenlo code. It does not relicense YouPI-PG,
+any upstream repository, third-party dependencies, bank infrastructure, UPI
+specifications, logos or trademarks. Third-party components retain their
+respective licences. See THIRD_PARTY_NOTICES.md.

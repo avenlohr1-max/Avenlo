@@ -77,12 +77,15 @@ do $$ begin
   exception when unique_violation then null; end;
 end $$;
 reset role;
+select set_config('request.jwt.claim.sub','',true);
 do $$ begin
   if exists(select 1 from public.candidate_service_orders where payment_provider='avenlo_upi') then raise exception 'test activated service order'; end if;
   if (select count(*) from public.avenlo_upi_events where kind='refund_requested')<>1 then raise exception 'refund request not idempotent'; end if;
   if has_function_privilege('anon','public.report_avenlo_upi_payment(uuid,text)','execute') or has_table_privilege('anon','public.avenlo_upi_requests','select') then raise exception 'anonymous payment access'; end if;
   update public.profiles set status='archived' where id='40000000-0000-0000-0000-000000000001';
+  if not exists(select 1 from public.profiles where id='40000000-0000-0000-0000-000000000001' and status='archived') then raise exception 'archive fixture did not apply'; end if;
 end $$;
+select set_config('request.jwt.claim.sub','40000000-0000-0000-0000-000000000001',true);
 set local role authenticated;
 do $$ begin
   if exists(select 1 from public.avenlo_upi_requests) then raise exception 'archived founder reads payments'; end if;
@@ -92,3 +95,4 @@ do $$ begin
   exception when raise_exception then if sqlerrm='archived founder reviewed payment' then raise; end if; end;
 end $$;
 rollback;
+

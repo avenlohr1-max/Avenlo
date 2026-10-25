@@ -1,4 +1,5 @@
 -- RLS regression checks against a disposable Postgres instance.
+-- Moderation regression checks are included below and always roll back.
 -- The CI workflow applies application migrations before running this file.
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
@@ -293,4 +294,53 @@ BEGIN
   END IF;
 END
 $$;
+ROLLBACK;
+
+-- Report ownership, visible targets, immutable evidence, and staff-only review.
+BEGIN;
+SELECT set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001', true);
+SET LOCAL ROLE authenticated;
+INSERT INTO public.moderation_reports(reporter_id,target_type,target_id,reason)
+VALUES('10000000-0000-0000-0000-000000000001','job','60000000-0000-0000-0000-000000000001','Synthetic moderation regression report');
+DO $$
+DECLARE n integer; blocked boolean;
+BEGIN
+  SELECT count(*) INTO n FROM public.moderation_reports;
+  IF n <> 1 THEN RAISE EXCEPTION 'reporter cannot read own report'; END IF;
+  blocked := false;
+  BEGIN
+    INSERT INTO public.moderation_reports(reporter_id,target_type,target_id,reason)
+    VALUES('10000000-0000-0000-0000-000000000001','job','60000000-0000-0000-0000-000000000001','Duplicate synthetic moderation report');
+  EXCEPTION WHEN unique_violation THEN blocked := true; END;
+  IF NOT blocked THEN RAISE EXCEPTION 'duplicate active report allowed'; END IF;
+  blocked := false;
+  BEGIN
+    INSERT INTO public.moderation_reports(reporter_id,target_type,target_id,reason)
+    VALUES('10000000-0000-0000-0000-000000000002','job','60000000-0000-0000-0000-000000000001','Forged synthetic moderation reporter');
+  EXCEPTION WHEN insufficient_privilege THEN blocked := true; END;
+  IF NOT blocked THEN RAISE EXCEPTION 'forged reporter allowed'; END IF;
+  UPDATE public.moderation_reports SET status='resolved';
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 0 THEN RAISE EXCEPTION 'reporter changed review status'; END IF;
+END $$;
+RESET ROLE;
+SELECT set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000002', true);
+SET LOCAL ROLE authenticated;
+DO $$ BEGIN
+  IF EXISTS(SELECT 1 FROM public.moderation_reports) THEN RAISE EXCEPTION 'unrelated candidate read report'; END IF;
+END $$;
+RESET ROLE;
+SELECT set_config('request.jwt.claim.sub', '30000000-0000-0000-0000-000000000001', true);
+SET LOCAL ROLE authenticated;
+DO $$
+DECLARE n integer; blocked boolean := false;
+BEGIN
+  UPDATE public.moderation_reports SET status='reviewing';
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 1 THEN RAISE EXCEPTION 'staff could not review report'; END IF;
+  BEGIN
+    UPDATE public.moderation_reports SET reason='Staff changed the original report';
+  EXCEPTION WHEN insufficient_privilege THEN blocked := true; END;
+  IF NOT blocked THEN RAISE EXCEPTION 'staff altered original report evidence'; END IF;
+END $$;
 ROLLBACK;

@@ -52,7 +52,7 @@ export default async function StaffWorkspace() {
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("jobs").select("id", { count: "exact", head: true }).eq("status", "open"),
-    supabase.from("applications").select("id", { count: "exact", head: true }).in("status", ["submitted", "pending"]),
+    supabase.from("applications").select("id", { count: "exact", head: true }).eq("status", "submitted"),
     supabase.from("moderation_reports").select("id", { count: "exact", head: true }),
   ]);
 

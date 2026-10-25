@@ -10,3 +10,4 @@ coverage
 supabase/.temp
 .DS_Store
 npm-debug.log*
+*.tsbuildinfo

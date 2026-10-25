@@ -52,7 +52,7 @@ export default async function StaffWorkspace() {
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("jobs").select("id", { count: "exact", head: true }).eq("status", "open"),
-    supabase.from("applications").select("id", { count: "exact", head: true }).in("status", ["submitted", "pending"]),
+    supabase.from("applications").select("id", { count: "exact", head: true }).eq("status", "submitted"),
     supabase.from("moderation_reports").select("id", { count: "exact", head: true }),
   ]);
 
@@ -74,7 +74,7 @@ export default async function StaffWorkspace() {
               <span>{displayName}</span>
               <b>{current?.role === "founder" ? "Founder" : "Staff"}</b>
             </div>
-            <Link className="ops-header__link" href="/dashboard">Candidate view</Link>
+            <Link className="ops-header__link" href="https://avenlo.in">Public website</Link>
             <Link className="ops-header__link" href="/staff/opportunities">Curate opportunities</Link>
             <Link className="ops-header__link" href="/staff/directory">Search people &amp; companies</Link><Link className="ops-header__link" href="/staff/employers">Employer onboarding</Link>
             <Link className="ops-header__link" href="/staff/roles">Review role briefs</Link>

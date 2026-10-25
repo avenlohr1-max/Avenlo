@@ -1,3 +1,5 @@
+import { extractResumePhone } from "./resume-contact";
+
 export type ResumeSection = { key: string; label: string; present: boolean };
 export type ResumeAnalysis = {
   version: 1; analyzedAt: string; fileName: string; fileType: "pdf" | "docx" | "doc"; wordCount: number; pageCount: number | null; score: number;
@@ -20,7 +22,7 @@ export function analyzeResume(args: { text: string; fileName: string; fileType: 
   const text = cleanText(args.text); const lines = text.split("\n").map((line) => line.trim()).filter(Boolean); const wordCount = text ? text.split(/\s+/).filter(Boolean).length : 0;
   const bullets = lines.filter((line) => /^[-•▪◦*]\s+/.test(line) || /^\d+[.)]\s+/.test(line)); const quantifiedBullets = bullets.filter((line) => QUANTITY.test(line)).length; const actionBullets = bullets.filter((line) => ACTION_VERBS.test(line)).length;
   const sections = SECTION_ALIASES.map(([key, label, aliases]) => ({ key, label, present: aliases.some((alias) => hasPhrase(text, alias)) })); const candidateSkills = args.candidateSkills ?? []; const detectedSkills = extractSkills(text, candidateSkills);
-  const contact = { email: /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(text), phone: /(?:\+?\d[\d ()-]{7,}\d)/.test(text) };
+  const contact = { email: /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(text), phone: extractResumePhone(text) !== null };
   let score = 0; score += Math.min(wordCount / 450, 1) * 12; score += contact.email ? 5 : 0; score += contact.phone ? 3 : 0; score += sections.filter((section) => section.present).length / sections.length * 30; score += Math.min(bullets.length / 10, 1) * 15; score += bullets.length ? Math.min(quantifiedBullets / Math.max(bullets.length, 1), 1) * 12 : 0; score += bullets.length ? Math.min(actionBullets / Math.max(bullets.length, 1), 1) * 8 : 0; score += Math.min(detectedSkills.length / 8, 1) * 15;
   const strengths: string[] = []; const improvements: string[] = [];
   if (contact.email && contact.phone) strengths.push("Contact details are easy to find."); if (sections.find((section) => section.key === "experience")?.present) strengths.push("Experience is clearly represented."); if (detectedSkills.length >= 5) strengths.push(`${detectedSkills.length} relevant skills were detected from the document.`); if (quantifiedBullets >= 2) strengths.push("Several achievements include measurable evidence."); if (strengths.length === 0) strengths.push("The document is readable enough to begin structured analysis.");
@@ -31,6 +33,6 @@ export async function extractResumeText(file: File, fileType: "pdf" | "docx" | "
   const buffer = await file.arrayBuffer(); if (fileType === "doc") return { text: "", pageCount: null as number | null };
   if (fileType === "docx") { const mammoth = await import("mammoth"); const result = await mammoth.extractRawText({ buffer: Buffer.from(buffer) }); return { text: result.value, pageCount: null as number | null }; }
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs"); const document = await pdfjs.getDocument({ data: new Uint8Array(buffer), useSystemFonts: true }).promise; const pages: string[] = [];
-  for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) { const page = await document.getPage(pageNumber); const content = await page.getTextContent(); pages.push(content.items.map((item) => ("str" in item ? item.str : "")).join(" ")); }
+  for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) { const page = await document.getPage(pageNumber); const content = await page.getTextContent(); pages.push(content.items.map((item) => ("str" in item ? item.str + (item.hasEOL ? "\n" : " ") : "")).join("")); }
   return { text: pages.join("\n"), pageCount: document.numPages };
 }

@@ -34,8 +34,8 @@ export function DeleteAccount({ enabled }: { enabled: boolean }) {
   return <section aria-labelledby="delete-account-title">
     <h2 id="delete-account-title">Delete your candidate account</h2>
     <p>This permanently removes your sign-in account, Talent Record, uploaded resumes, skills, education, applications, Signal Ledger, evidence links, career scenarios, opportunity suggestions, private notes, decision rooms, proof snapshots, dossiers and human service cases. It ends your account sessions. You cannot undo it.</p>
-    <p>Accounts with service orders need support review first. Previously downloaded copies, support correspondence, security records and backup copies may remain subject to Avenlo’s retention policy. Read the <a href="/privacy">privacy policy</a> or contact <a href="mailto:support@avenlo.in">support@avenlo.in</a>.</p>
-    {!enabled ? <p role="status">Self-service deletion is being prepared. Contact support@avenlo.in to request account deletion.</p> : <form className="form" onSubmit={submit}>
+    <p>Accounts with service orders need support review first. Previously downloaded copies, support correspondence, security records and backup copies may remain subject to Avenlo’s retention policy. Read the <a href="/privacy">privacy policy</a> or contact <a href="mailto:candidates@avenlo.in">candidates@avenlo.in</a>.</p>
+    {!enabled ? <p role="status">Self-service deletion is being prepared. Contact candidates@avenlo.in to request account deletion.</p> : <form className="form" onSubmit={submit}>
       <label>Current password<input type="password" autoComplete="current-password" required maxLength={512} value={password} disabled={pending} onChange={(event) => setPassword(event.target.value)} /></label>
       <label>Type DELETE to confirm<input autoComplete="off" required pattern="DELETE" value={confirmation} disabled={pending} onChange={(event) => setConfirmation(event.target.value)} /></label>
       {error && <p className="error" role="alert">{error}</p>}

@@ -24,7 +24,7 @@ export function ReportButton({ targetType, targetId }: { targetType: TargetType;
   }
 
   if (!open) {
-    return <button className="btn" type="button" onClick={() => setOpen(true)}>Report</button>;
+    return <div><button className="btn" type="button" onClick={() => setOpen(true)}>Report</button>{message ? <p className="muted" role="status">{message}</p> : null}</div>;
   }
 
   return (

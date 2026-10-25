@@ -27,15 +27,19 @@ The bank-verified beneficiary name in the payer's UPI app remains authoritative.
 
 ## Configuration
 
-Use server environment variables; never NEXT_PUBLIC_ receiver configuration.
+Use server environment variables for non-sensitive mode flags only.
 
     AVENLO_UPI_ENABLED=true
     AVENLO_UPI_MODE=sandbox
 
 Sandbox contains no receiving UPI address and generates no payment QR. To run
-the owner's private INR 1 test after verification, set mode=test and securely
-configure AVENLO_UPI_TEST_VPA and AVENLO_UPI_TEST_PAYEE_NAME. Real receiver
-values are intentionally absent from this repository. Missing fields, an
+the owner's private INR 1 test after verification, set mode=test and store
+a JSON object with `upi` and `name` in the encrypted Supabase Vault entry
+`avenlo_upi_test_receiver`. The service-role-only RPC of the same name reads
+that single entry, and server code calls it only after founder authentication.
+Do not store personal receiver details in hosting environment variables or
+NEXT_PUBLIC_ configuration. Real receiver values are absent from this repository.
+Missing fields, an
 unsupported mode or ENABLED other than true fail closed.
 
 The gateway uses the existing Next.js/Netlify and Supabase infrastructure;

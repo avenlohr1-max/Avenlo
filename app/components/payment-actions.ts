@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { collaborationContext } from "@/lib/collaboration-server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { paymentSettings, referenceSchema } from "@/lib/payments/upi";
+import { referenceSchema } from "@/lib/payments/upi";
+import { resolvePaymentSettings } from "@/lib/payments/settings";
 
 const idSchema = z.guid();
 function finish(role: string, result: string): never {
@@ -15,7 +16,7 @@ function finish(role: string, result: string): never {
 
 export async function createPaymentRequest() {
   const { user, role } = await collaborationContext(["candidate", "founder"]);
-  const settings = paymentSettings();
+  const settings = await resolvePaymentSettings(role === "founder");
   if (!settings.enabled || settings.mode === "test" && role !== "founder") finish(role, "disabled");
   const { error } = await createAdminClient().rpc("create_avenlo_upi_request", {
     p_owner_id: user.id, p_mode: settings.mode, p_payee_upi: settings.payeeUpi, p_payee_name: settings.payeeName,

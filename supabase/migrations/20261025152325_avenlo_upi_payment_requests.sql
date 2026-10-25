@@ -152,3 +152,15 @@ $$;
 revoke all on function public.request_avenlo_upi_refund(uuid,text) from public,anon;
 grant execute on function public.request_avenlo_upi_refund(uuid,text) to authenticated;
 
+-- No receiver information is stored in plaintext hosting environment variables.
+-- Read exactly one encrypted Vault entry, and only through trusted server code.
+create function public.avenlo_upi_test_receiver()
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare receiver jsonb;
+begin
+  if to_regclass('vault.decrypted_secrets') is null then return null; end if;
+  select decrypted_secret::jsonb into receiver from vault.decrypted_secrets where name='avenlo_upi_test_receiver';
+  return receiver;
+end $$;
+revoke all on function public.avenlo_upi_test_receiver() from public,anon,authenticated;
+grant execute on function public.avenlo_upi_test_receiver() to service_role;

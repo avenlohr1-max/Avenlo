@@ -12,7 +12,7 @@ test("sandbox contains no real payee or transferable intent", () => {
 });
 test("personal test mode requires both receiver fields", () => {
   expect(paymentSettings({ AVENLO_UPI_ENABLED: "true", AVENLO_UPI_MODE: "test" }).enabled).toBe(false);
-  expect(paymentSettings({ AVENLO_UPI_ENABLED: "true", AVENLO_UPI_MODE: "test", AVENLO_UPI_TEST_VPA: "synthetic@example", AVENLO_UPI_TEST_PAYEE_NAME: "Synthetic receiver" }).enabled).toBe(true);
+  expect(paymentSettings({ AVENLO_UPI_ENABLED: "true", AVENLO_UPI_MODE: "test" }, { upi: "synthetic@example", name: "Synthetic receiver" }).enabled).toBe(true);
 });
 test("test intent fixes the amount, currency and encoded receiver", () => {
   const uri = new URL(paymentIntent(request, 0)!);

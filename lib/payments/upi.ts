@@ -13,14 +13,13 @@ export type PaymentRequest = {
 export const referenceSchema = z.string().trim().min(6).max(80).regex(/^[A-Za-z0-9-]+$/);
 const upiSchema = z.string().trim().min(5).max(100).regex(/^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+$/);
 
-export function paymentSettings(env: Record<string, string | undefined> = process.env) {
+export function paymentSettings(env: Record<string, string | undefined> = process.env, receiver?: unknown) {
   const mode = z.enum(paymentModes).safeParse(env.AVENLO_UPI_MODE || "sandbox");
   if (env.AVENLO_UPI_ENABLED !== "true" || !mode.success) return { enabled: false as const, mode: "sandbox" as const, payeeUpi: null, payeeName: "Avenlo sandbox" };
   if (mode.data === "sandbox") return { enabled: true as const, mode: "sandbox" as const, payeeUpi: null, payeeName: "Avenlo sandbox" };
-  const upi = upiSchema.safeParse(env.AVENLO_UPI_TEST_VPA);
-  const name = z.string().trim().min(2).max(120).safeParse(env.AVENLO_UPI_TEST_PAYEE_NAME);
-  if (!upi.success || !name.success) return { enabled: false as const, mode: "test" as const, payeeUpi: null, payeeName: "Test receiver not configured" };
-  return { enabled: true as const, mode: "test" as const, payeeUpi: upi.data, payeeName: name.data };
+  const parsed = z.object({ upi: upiSchema, name: z.string().trim().min(2).max(120) }).safeParse(receiver);
+  if (!parsed.success) return { enabled: false as const, mode: "test" as const, payeeUpi: null, payeeName: "Test receiver not configured" };
+  return { enabled: true as const, mode: "test" as const, payeeUpi: parsed.data.upi, payeeName: parsed.data.name };
 }
 
 /** A QR/intent is a payment instruction, never proof of payment. */

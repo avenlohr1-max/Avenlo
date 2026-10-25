@@ -57,7 +57,7 @@ export default async function CandidateJobDetails({ params }: { params: Promise<
     <nav className="nav container">
       <span className="brand">AVENLO</span>
       <div className="actions">
-        <Link className="btn" href="/dashboard/jobs">Back to roles</Link>
+        <Link className="btn" href="/dashboard/recommendations">Back to opportunities</Link>
         <Link className="btn" href="/dashboard/applications">Applications</Link>
       </div>
     </nav>

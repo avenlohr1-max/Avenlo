@@ -73,7 +73,7 @@ end $$;
 revoke all on function public.create_avenlo_upi_request(uuid,text,text,text) from public,anon,authenticated;
 grant execute on function public.create_avenlo_upi_request(uuid,text,text,text) to service_role;
 
-create function public.report_avenlo_upi_payment(p_request_id uuid,p_reference text)
+create function private.report_avenlo_upi_payment(p_request_id uuid,p_reference text)
 returns void language plpgsql security definer set search_path='' as $$
 declare r public.avenlo_upi_requests;
 begin
@@ -87,10 +87,10 @@ begin
   update public.avenlo_upi_requests set status='reported',payer_reference=btrim(p_reference) where id=r.id;
   insert into public.avenlo_upi_events(request_id,actor_id,kind) values(r.id,auth.uid(),'reported');
 end $$;
-revoke all on function public.report_avenlo_upi_payment(uuid,text) from public,anon;
-grant execute on function public.report_avenlo_upi_payment(uuid,text) to authenticated;
+revoke all on function private.report_avenlo_upi_payment(uuid,text) from public,anon;
+grant execute on function private.report_avenlo_upi_payment(uuid,text) to authenticated;
 
-create function public.review_avenlo_upi_payment(p_request_id uuid,p_decision text,p_bank_reference text,p_amount_paise integer,p_payee_upi text,p_received_at timestamptz,p_bank_checked boolean,p_note text)
+create function private.review_avenlo_upi_payment(p_request_id uuid,p_decision text,p_bank_reference text,p_amount_paise integer,p_payee_upi text,p_received_at timestamptz,p_bank_checked boolean,p_note text)
 returns void language plpgsql security definer set search_path='' as $$
 declare r public.avenlo_upi_requests;
 begin
@@ -113,10 +113,10 @@ begin
   insert into public.avenlo_upi_events(request_id,actor_id,kind) values(r.id,auth.uid(),p_decision);
   -- Deliberately no call to service settlement/activation, in either mode.
 end $$;
-revoke all on function public.review_avenlo_upi_payment(uuid,text,text,integer,text,timestamptz,boolean,text) from public,anon;
-grant execute on function public.review_avenlo_upi_payment(uuid,text,text,integer,text,timestamptz,boolean,text) to authenticated;
+revoke all on function private.review_avenlo_upi_payment(uuid,text,text,integer,text,timestamptz,boolean,text) from public,anon;
+grant execute on function private.review_avenlo_upi_payment(uuid,text,text,integer,text,timestamptz,boolean,text) to authenticated;
 
-create function public.request_avenlo_upi_refund(p_request_id uuid,p_reason text)
+create function private.request_avenlo_upi_refund(p_request_id uuid,p_reason text)
 returns void language plpgsql security definer set search_path='' as $$
 declare r public.avenlo_upi_requests;
 begin
@@ -128,5 +128,27 @@ begin
   update public.avenlo_upi_requests set refund_status='requested',refund_reason=btrim(p_reason) where id=r.id;
   insert into public.avenlo_upi_events(request_id,actor_id,kind) values(r.id,auth.uid(),'refund_requested');
 end $$;
+revoke all on function private.request_avenlo_upi_refund(uuid,text) from public,anon;
+grant execute on function private.request_avenlo_upi_refund(uuid,text) to authenticated;
+
+-- Expose only invoker wrappers. Privileged implementations stay in the
+-- non-exposed private schema and enforce auth.uid(), account status and role.
+create function public.report_avenlo_upi_payment(p_request_id uuid,p_reference text)
+returns void language sql security invoker set search_path='' as $$
+  select private.report_avenlo_upi_payment(p_request_id,p_reference);
+$$;
+revoke all on function public.report_avenlo_upi_payment(uuid,text) from public,anon;
+grant execute on function public.report_avenlo_upi_payment(uuid,text) to authenticated;
+create function public.review_avenlo_upi_payment(p_request_id uuid,p_decision text,p_bank_reference text,p_amount_paise integer,p_payee_upi text,p_received_at timestamptz,p_bank_checked boolean,p_note text)
+returns void language sql security invoker set search_path='' as $$
+  select private.review_avenlo_upi_payment(p_request_id,p_decision,p_bank_reference,p_amount_paise,p_payee_upi,p_received_at,p_bank_checked,p_note);
+$$;
+revoke all on function public.review_avenlo_upi_payment(uuid,text,text,integer,text,timestamptz,boolean,text) from public,anon;
+grant execute on function public.review_avenlo_upi_payment(uuid,text,text,integer,text,timestamptz,boolean,text) to authenticated;
+create function public.request_avenlo_upi_refund(p_request_id uuid,p_reason text)
+returns void language sql security invoker set search_path='' as $$
+  select private.request_avenlo_upi_refund(p_request_id,p_reason);
+$$;
 revoke all on function public.request_avenlo_upi_refund(uuid,text) from public,anon;
 grant execute on function public.request_avenlo_upi_refund(uuid,text) to authenticated;
+

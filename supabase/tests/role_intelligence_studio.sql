@@ -110,4 +110,17 @@ begin
   if has_function_privilege('authenticated', 'private.record_role_brief_revision()', 'EXECUTE') or has_function_privilege('anon', 'private.record_role_brief_revision()', 'EXECUTE') then raise exception 'role audit writer callable by client'; end if;
 end;
 $$;
+-- Employer account removal queues attribution SET NULL and parent cascades.
+-- A queued revision writer must not insert history for the deleted brief.
+delete from public.jobs where company_id = '50000000-0000-0000-0000-000000000001';
+delete from public.profiles where id = '20000000-0000-0000-0000-000000000001';
+set constraints all immediate;
+do $$
+begin
+  if exists(select 1 from public.companies where id = '50000000-0000-0000-0000-000000000001')
+    or exists(select 1 from public.employer_role_briefs where id = 'a0000000-0000-0000-0000-000000000001')
+    or exists(select 1 from public.employer_role_brief_history where brief_id = 'a0000000-0000-0000-0000-000000000001')
+  then raise exception 'employer account removal left company or role history'; end if;
+end;
+$$;
 rollback;

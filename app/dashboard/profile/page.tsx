@@ -125,9 +125,18 @@ export default function CandidateProfilePage() {
       const nextPreferences = { ...candidate.preferences, target_roles: roleList, work_history: workHistory.map(({ id, ...row }) => ({ id, ...row })) };
       const { error: candidateError } = await supabase.from("candidate_profiles").upsert({ user_id: user.id, experience_years: candidate.experience_years, seniority: candidate.seniority.trim() || null, work_mode: candidate.work_mode.trim() || null, industry: candidate.industry.trim() || null, resume_path: resumePath, share_with_applicant_companies: candidate.share_with_applicant_companies, preferences: nextPreferences }, { onConflict: "user_id" });
       if (candidateError) throw new Error("Unable to save professional details.");
-      const { error: deleteSkillError } = await supabase.from("candidate_skills").delete().eq("user_id", user.id);
-      if (deleteSkillError) throw new Error("Unable to update skills.");
-      if (skillList.length) { const { error: skillError } = await supabase.from("candidate_skills").insert(skillList.map((skill) => ({ user_id: user.id, skill }))); if (skillError) throw new Error("Unable to update skills."); }
+      const { data: existingSkills, error: existingSkillError } = await supabase.from("candidate_skills").select("id, skill").eq("user_id", user.id);
+      if (existingSkillError) throw new Error("Unable to load existing skills.");
+      // Retain IDs for unchanged skills: replacing them cascades away the
+      // candidate's reviewed Capability Atlas evidence links.
+      const existingSkillNames = new Set((existingSkills ?? []).map((row) => row.skill.trim().toLowerCase()));
+      const removedSkillIds = (existingSkills ?? []).filter((row) => !skillList.includes(row.skill.trim().toLowerCase())).map((row) => row.id);
+      if (removedSkillIds.length) {
+        const { error: deleteSkillError } = await supabase.from("candidate_skills").delete().eq("user_id", user.id).in("id", removedSkillIds);
+        if (deleteSkillError) throw new Error("Unable to update skills.");
+      }
+      const newSkills = skillList.filter((skill) => !existingSkillNames.has(skill));
+      if (newSkills.length) { const { error: skillError } = await supabase.from("candidate_skills").insert(newSkills.map((skill) => ({ user_id: user.id, skill }))); if (skillError) throw new Error("Unable to update skills."); }
       const { data: existingEducation } = await supabase.from("candidate_education").select("id").eq("user_id", user.id);
       const keptIds = new Set(education.filter((row) => row.id && !row.id.startsWith("imported-")).map((row) => row.id as string));
       const idsToDelete = (existingEducation ?? []).map((row) => row.id).filter((id) => !keptIds.has(id));

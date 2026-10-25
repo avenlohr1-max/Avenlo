@@ -30,8 +30,12 @@ test.describe("disposable authenticated suite", () => {
     const upload = await publicClient.storage.from("candidate-documents").upload(`${candidateId}/resume.pdf`, new Blob(["%PDF-1.4\nsynthetic disposable resume"], { type: "application/pdf" }));
     expect(upload.error).toBeNull();
     const { data: existingContext } = await publicClient.from("candidate_profiles").select("preferences").eq("user_id", candidateId).single();
-    const importContext = await publicClient.from("candidate_profiles").update({ preferences: { ...existingContext?.preferences, resume_import: { phone: "2024 - 2026", headline: "Unreviewed import", target_roles: ["Unreviewed role"], work_history: [{ company: "Unreviewed employer", title: "Imported role" }] } } }).eq("user_id", candidateId);
+    const importContext = await publicClient.from("candidate_profiles").upsert({ user_id: candidateId, preferences: { ...existingContext?.preferences, resume_import: { phone: "2024 - 2026", headline: "Unreviewed import", target_roles: ["Unreviewed role"], work_history: [{ company: "Unreviewed employer", title: "Imported role" }] } } });
     expect(importContext.error).toBeNull();
+    const skill = await publicClient.from("candidate_skills").insert({ user_id: candidateId, skill: "sql" }).select("id").single();
+    expect(skill.error).toBeNull();
+    const capability = await publicClient.from("candidate_capability_evidence").insert({ candidate_id: candidateId, candidate_skill_id: skill.data!.id, signal_id: process.env.AVENLO_E2E_SIGNAL_ID! });
+    expect(capability.error).toBeNull();
     await login(candidate, "candidate");
     await candidate.goto("/dashboard/profile");
     await candidate.getByRole("textbox", { name: "Professional headline", exact: true }).fill("Synthetic reporting analyst");
@@ -42,6 +46,17 @@ test.describe("disposable authenticated suite", () => {
     await expect(candidate.getByRole("textbox", { name: "Professional headline", exact: true })).toHaveValue("Synthetic reporting analyst");
     await expect(candidate.getByRole("textbox", { name: "Phone", exact: true })).toHaveValue("");
     await expect(candidate.getByText("Unreviewed employer", { exact: true })).toHaveCount(0);
+    const retainedEvidence = await publicClient.from("candidate_capability_evidence").select("candidate_skill_id").eq("candidate_id", candidateId);
+    expect(retainedEvidence.data).toContainEqual({ candidate_skill_id: skill.data!.id });
+    await candidate.goto("/dashboard/scenarios");
+    await candidate.getByRole("textbox", { name: "Role to explore", exact: true }).fill("Synthetic scenario evidence review");
+    await candidate.getByRole("button", { name: "Add scenario", exact: true }).click();
+    await expect(candidate.getByRole("button", { name: "Link", exact: true })).toBeDisabled();
+    await candidate.getByRole("combobox", { name: "Choose a signal", exact: true }).selectOption(process.env.AVENLO_E2E_SIGNAL_ID!);
+    await candidate.getByRole("button", { name: "Link", exact: true }).click();
+    await expect(candidate.getByRole("status")).toContainText("signal linked");
+    await candidate.reload();
+    await expect(candidate.getByText("Every confirmed signal is already linked.")).toBeVisible();
     await candidate.goto(`/dashboard/jobs/${process.env.AVENLO_E2E_JOB_ID}`);
     await candidate.getByRole("button", { name: "Apply", exact: true }).click();
     await expect(candidate.getByRole("button", { name: "Applied", exact: true })).toBeDisabled();
@@ -142,3 +157,4 @@ test.describe("disposable authenticated suite", () => {
     await candidateContext.close(); await employerContext.close(); await staffContext.close();
   });
 });
+

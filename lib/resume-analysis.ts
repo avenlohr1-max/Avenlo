@@ -17,7 +17,15 @@ const QUANTITY = /(\b\d+(?:\.\d+)?\s?%|\b\d+(?:\.\d+)?\s?(?:x|k|m|million|thousa
 function cleanText(input: string) { return input.split(String.fromCharCode(0)).join(" ").replace(/[\t\r]+/g, " ").replace(/ +/g, " ").replace(/\n{3,}/g, "\n\n").trim(); }
 function hasPhrase(text: string, phrase: string) { const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); return new RegExp(`(?:^|\\b)${escaped}(?:\\b|$)`, "i").test(text); }
 function findSummary(text: string) { const lines = text.split("\n").map((line) => line.trim()).filter(Boolean); const index = lines.findIndex((line) => /^(professional )?(summary|profile|objective|about me)$/i.test(line)); if (index < 0) return null; return lines.slice(index + 1, index + 5).filter((line) => !/^(experience|education|skills|projects|certifications)$/i.test(line)).join(" ").slice(0, 420) || null; }
-function extractSkills(text: string, candidateSkills: string[]) { const found = new Set<string>(); const lower = text.toLowerCase(); for (const skill of candidateSkills) if (skill && lower.includes(skill.toLowerCase())) found.add(skill); for (const [label, aliases] of SKILL_ALIASES) if (aliases.some((alias) => hasPhrase(text, alias))) found.add(label); return [...found].sort((a, b) => a.localeCompare(b)); }
+function extractSkills(text: string, candidateSkills: string[]) {
+  const found = new Map<string, string>();
+  for (const skill of candidateSkills) {
+    const label = skill.trim();
+    if (label && hasPhrase(text, label)) found.set(label.toLowerCase(), label);
+  }
+  for (const [label, aliases] of SKILL_ALIASES) if (aliases.some((alias) => hasPhrase(text, alias))) found.set(label.toLowerCase(), label);
+  return [...found.values()].sort((a, b) => a.localeCompare(b));
+}
 export function analyzeResume(args: { text: string; fileName: string; fileType: "pdf" | "docx" | "doc"; pageCount?: number | null; candidateSkills?: string[] }): ResumeAnalysis {
   const text = cleanText(args.text); const lines = text.split("\n").map((line) => line.trim()).filter(Boolean); const wordCount = text ? text.split(/\s+/).filter(Boolean).length : 0;
   const bullets = lines.filter((line) => /^[-•▪◦*]\s+/.test(line) || /^\d+[.)]\s+/.test(line)); const quantifiedBullets = bullets.filter((line) => QUANTITY.test(line)).length; const actionBullets = bullets.filter((line) => ACTION_VERBS.test(line)).length;

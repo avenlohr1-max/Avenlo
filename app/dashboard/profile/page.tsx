@@ -54,14 +54,7 @@ export default function CandidateProfilePage() {
         const savedRoles = Array.isArray(prefs.target_roles) ? prefs.target_roles : [];
         setTargetRoles(savedRoles.map(String).join(", "));
         setWorkHistory(savedWork.map((item: Partial<Work>, index: number) => ({ id: item.id || `work-${index}`, company: item.company || "", title: item.title || "", location: item.location || "", start_year: item.start_year ?? null, end_year: item.end_year ?? null, currently_working: Boolean(item.currently_working), description: item.description || "" })));
-        const imported = prefs.resume_import as Partial<ExtractedProfile> | undefined;
-        if (imported) {
-          setProfile((current) => ({ ...current, full_name: current.full_name || imported.full_name || "", phone: current.phone || imported.phone || "", headline: current.headline || imported.headline || "", location: current.location || imported.location || "", bio: current.bio || imported.bio || "" }));
-          if (!savedWork.length && Array.isArray(imported.work_history)) setWorkHistory(imported.work_history.map((item, index) => ({ ...emptyWork(), ...item, id: item.id || `imported-${index}` })));
-          if (!savedRoles.length && Array.isArray(imported.target_roles)) setTargetRoles(imported.target_roles.map(String).join(", "));
-          if (!skillData?.length && Array.isArray(imported.skills)) setSkills(imported.skills.join(", "));
-          if (!educationData?.length && Array.isArray(imported.education)) setEducation(imported.education.map((item, index) => ({ ...emptyEducation(), ...item, id: item.id || `imported-education-${index}` })));
-        }
+        // Reload saved choices; an old import must not restore deliberately cleared fields.
       }
       setSkills((skillData ?? []).map((item) => item.skill).join(", "));
       setEducation((educationData ?? []).map((item) => ({ id: item.id, institution: item.institution ?? "", degree: item.degree ?? "", field_of_study: item.field_of_study ?? "", start_year: item.start_year ?? null, end_year: item.end_year ?? null, currently_studying: Boolean(item.currently_studying) })));

@@ -36,6 +36,9 @@ test.describe("disposable authenticated suite", () => {
     await expect(candidate.getByRole("status")).toContainText("saved");
     await candidate.reload();
     await expect(candidate.getByRole("textbox", { name: "Professional headline", exact: true })).toHaveValue("Synthetic reporting analyst");
+    await candidate.goto(`/dashboard/jobs/${process.env.AVENLO_E2E_JOB_ID}`);
+    await candidate.getByRole("button", { name: "Apply", exact: true }).click();
+    await expect(candidate.getByRole("button", { name: "Applied", exact: true })).toBeDisabled();
     await candidate.goto("/dashboard/rooms");
     await candidate.getByLabel("Employer through its open role").selectOption(process.env.AVENLO_E2E_JOB_ID!);
     await candidate.getByLabel("Room title").fill("Synthetic mutual discussion");
@@ -46,6 +49,7 @@ test.describe("disposable authenticated suite", () => {
     await candidate.waitForURL(/\/dashboard\/rooms\/[a-f0-9-]+$/, { timeout: 30_000 });
     const roomPath = new URL(candidate.url()).pathname;
     await login(employer, "company");
+    await expect(employer.locator("article").filter({ hasText: "LIVE ROLES" }).getByText("1", { exact: true })).toBeVisible();
     await employer.goto(roomPath);
     await expect(employer.getByRole("heading", { name: "Synthetic mutual discussion" })).toBeVisible();
     await expect(employer.getByText("No proof snapshots are currently shared.")).toBeVisible();

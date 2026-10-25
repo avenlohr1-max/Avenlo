@@ -254,7 +254,7 @@ export default function CompanyPage() {
       {company ? <div className={styles.overview}>
         <article className={styles.overviewCard}><span>ALL ROLES</span><strong>{jobs.length}</strong><small>Created in your workspace</small></article>
         <article className={styles.overviewCard}><span>IN REVIEW</span><strong>{jobs.filter((job) => job.status === "pending_review").length}</strong><small>Awaiting Avenlo review</small></article>
-        <article className={styles.overviewCard}><span>LIVE ROLES</span><strong>{jobs.filter((job) => job.status === "published" || job.status === "active").length}</strong><small>Visible opportunities</small></article>
+        <article className={styles.overviewCard}><span>LIVE ROLES</span><strong>{jobs.filter((job) => job.status === "open").length}</strong><small>Visible opportunities</small></article>
       </div> : null}
 
       {!company ? <form className="card form" onSubmit={saveCompany}>

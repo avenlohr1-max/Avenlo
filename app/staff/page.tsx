@@ -74,7 +74,7 @@ export default async function StaffWorkspace() {
               <span>{displayName}</span>
               <b>{current?.role === "founder" ? "Founder" : "Staff"}</b>
             </div>
-            <Link className="ops-header__link" href="/dashboard">Candidate view</Link>
+            <Link className="ops-header__link" href="https://avenlo.in">Public website</Link>
             <Link className="ops-header__link" href="/staff/opportunities">Curate opportunities</Link>
             <Link className="ops-header__link" href="/staff/directory">Search people &amp; companies</Link><Link className="ops-header__link" href="/staff/employers">Employer onboarding</Link>
             <Link className="ops-header__link" href="/staff/roles">Review role briefs</Link>

@@ -1,3 +1,5 @@
+import { extractResumePhone } from "./resume-contact";
+
 export type ExtractedEducation = {
   institution: string;
   degree: string;
@@ -44,7 +46,6 @@ const SECTION_HEADINGS: Record<string, RegExp> = {
 const DATE_RANGE = /(19\d{2}|20\d{2})\s*(?:-|–|—|to)\s*(19\d{2}|20\d{2}|present|current|now)/i;
 const YEAR = /\b(19\d{2}|20\d{2})\b/g;
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
-const PHONE = /(?:\+?\d[\d ()-]{7,}\d)/;
 
 function linesOf(text: string) {
   return text.split(/\n+/).map((line) => line.replace(/^[-\s•▪◦*]+/, "").trim()).filter(Boolean);
@@ -70,22 +71,22 @@ function clean(value: string | undefined) {
 }
 
 function firstContactLine(lines: string[]) {
-  return lines.findIndex((line) => EMAIL.test(line) || PHONE.test(line));
+  return lines.findIndex((line) => EMAIL.test(line) || extractResumePhone(line) !== null);
 }
 
 function extractIdentity(lines: string[]) {
   const contactIndex = firstContactLine(lines);
   const top = lines.slice(0, Math.min(contactIndex >= 0 ? contactIndex + 1 : 8, 8));
   const name = top.find((line) => {
-    if (EMAIL.test(line) || PHONE.test(line) || isHeading(line)) return false;
+    if (EMAIL.test(line) || extractResumePhone(line) !== null || isHeading(line)) return false;
     if (/https?:\/\//i.test(line) || /\b(linkedin|github)\.com\b/i.test(line)) return false;
     return /^[A-Za-z][A-Za-z .'-]{2,60}$/.test(line);
   }) || null;
   const email = lines.join(" ").match(EMAIL)?.[0] ?? null;
-  const phone = lines.join(" ").match(PHONE)?.[0]?.trim() ?? null;
+  const phone = extractResumePhone(lines.join("\n"));
   const nameIndex = name ? lines.indexOf(name) : -1;
   const candidates = nameIndex >= 0 ? lines.slice(nameIndex + 1, contactIndex >= 0 ? contactIndex : nameIndex + 4) : [];
-  const headline = candidates.find((line) => line.length >= 4 && line.length <= 100 && !EMAIL.test(line) && !PHONE.test(line) && !isHeading(line) && !/https?:\/\//i.test(line)) ?? null;
+  const headline = candidates.find((line) => line.length >= 4 && line.length <= 100 && !EMAIL.test(line) && extractResumePhone(line) === null && !isHeading(line) && !/https?:\/\//i.test(line)) ?? null;
   const location = candidates.find((line) => /,\s*[A-Za-z]{2,}|\b(India|USA|UK|Canada|Australia|Singapore|UAE)\b/i.test(line) && line !== headline) ?? null;
   return { name, email, phone, headline, location };
 }

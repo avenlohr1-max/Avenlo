@@ -50,7 +50,7 @@ export async function proxy(request: NextRequest) {
   if (employer && !["/companies","/company","/dashboard/rooms","/api/company-inquiries",...authPaths].some(p=>within(effectivePath,p))) {
     return new NextResponse("Not found.",{status:404});
   }
-  if (operations && !["/staff","/admin","/api/admin","/auth","/account-suspended"].some(p=>within(effectivePath,p))) {
+  if (operations && !["/staff","/admin","/api/admin","/auth","/forgot-password","/account-suspended"].some(p=>within(effectivePath,p))) {
     return new NextResponse("Not found.",{status:404});
   }
   if (portal==="staff" && within(effectivePath,"/admin") && effectivePath!=="/admin/login") {

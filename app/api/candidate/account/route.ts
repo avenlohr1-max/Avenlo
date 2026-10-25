@@ -12,7 +12,7 @@ function failure(error: string, status: number) {
 
 export async function DELETE(request: Request) {
   if (process.env.ENABLE_CANDIDATE_ACCOUNT_ERASURE !== "true") {
-    return failure("Account deletion is not available yet. Contact support@avenlo.in for help.", 503);
+    return failure("Account deletion is not available yet. Contact candidates@avenlo.in for help.", 503);
   }
   // Next's server URL can use its internal hostname behind a proxy. The
   // configured public site is authoritative; do not trust forwarded headers.
@@ -44,7 +44,7 @@ export async function DELETE(request: Request) {
     // Never cascade them away through this self-service flow.
     const { count, error: orderError } = await admin.from("candidate_service_orders").select("id", { count: "exact", head: true }).eq("candidate_id", user.id);
     if (orderError || count === null) return failure("Unable to check service records. Please try again.", 503);
-    if (count > 0) return failure("Your account has service records. Contact support@avenlo.in so we can review payments, refunds and deletion with you.", 409);
+    if (count > 0) return failure("Your account has service records. Contact candidates@avenlo.in so we can review payments, refunds and deletion with you.", 409);
 
     // Use an isolated public client: reauthentication must not replace the
     // caller's cookies or put a user's session on the privileged admin client.
@@ -90,6 +90,6 @@ export async function DELETE(request: Request) {
     await supabase.auth.signOut({ scope: "local" });
     return NextResponse.json({ deleted: true }, { headers: { "Cache-Control": "no-store" } });
   } catch {
-    return failure("Deletion could not be completed. Your sessions may have ended and some resume files may have been removed. Sign in again to retry, or contact support@avenlo.in.", 503);
+    return failure("Deletion could not be completed. Your sessions may have ended and some resume files may have been removed. Sign in again to retry, or contact candidates@avenlo.in.", 503);
   }
 }

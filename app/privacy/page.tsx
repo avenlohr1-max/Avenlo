@@ -15,6 +15,6 @@ export default function PrivacyPage() {
     <h2>7. Security</h2><p>Avenlo uses access controls, authenticated workflows and technical safeguards intended to protect account and professional information. No internet service can guarantee absolute security.</p>
     <h2>8. Retention</h2><p>Room and human-service case access lasts 30 days; withdrawal can end access sooner. Their records are scheduled for deletion 90 days after expiry. Private proof drafts are retained for 90 days and collaboration audit metadata for 180 days. Account, payment, dispute and legally required records follow their applicable purpose and retention obligations.</p><p>Copies already exported by a participant cannot be recalled by removing platform access. Recipients must follow the agreed purpose and copy-handling terms. Backup recovery must reconcile deletion requests before restored information is made accessible again.</p>
     <h2>9. Your choices</h2><p>You may contact Avenlo to ask about your personal information, request correction of inaccurate information, or raise a privacy concern. Some information may need to be retained where required for legal, security or transaction purposes.</p>
-    <h2>10. Contact</h2><p>Privacy questions can be sent to <a href="mailto:support@avenlo.in">support@avenlo.in</a>.</p>
+    <h2>10. Contact</h2><p>Privacy questions can be sent to <a href="mailto:candidates@avenlo.in">candidates@avenlo.in</a>.</p>
   </div></section><SiteFooter /></main>;
 }

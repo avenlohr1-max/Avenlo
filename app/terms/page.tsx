@@ -16,6 +16,6 @@ export default function TermsPage() {
     <h2>8. Misuse</h2><p>Users must not attempt to access another person's account or private information, interfere with the platform, submit malicious content, misrepresent their identity, or use Avenlo for unlawful discrimination, fraud or other unlawful activity.</p>
     <h2>9. Availability</h2><p>We aim to keep Avenlo available and reliable, but the service may occasionally be unavailable because of maintenance, technical issues, third-party dependencies or events outside our reasonable control.</p>
     <h2>10. Changes</h2><p>Avenlo may update these terms as the platform and services evolve. The latest version published on this page applies to future use and purchases, subject to applicable law and any specific contractual terms.</p>
-    <h2>11. Contact</h2><p>Questions about these terms can be sent to <a href="mailto:support@avenlo.in">support@avenlo.in</a>.</p>
+    <h2>11. Contact</h2><p>Questions about these terms can be sent to <a href="mailto:candidates@avenlo.in">candidates@avenlo.in</a>.</p>
   </div></section><SiteFooter /></main>;
 }

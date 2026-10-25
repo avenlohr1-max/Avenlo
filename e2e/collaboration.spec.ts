@@ -42,6 +42,15 @@ test.describe("disposable authenticated suite", () => {
     await expect(candidate.getByRole("textbox", { name: "Professional headline", exact: true })).toHaveValue("Synthetic reporting analyst");
     await expect(candidate.getByRole("textbox", { name: "Phone", exact: true })).toHaveValue("");
     await expect(candidate.getByText("Unreviewed employer", { exact: true })).toHaveCount(0);
+    await candidate.goto("/dashboard/scenarios");
+    await candidate.getByRole("textbox", { name: "Role to explore", exact: true }).fill("Synthetic scenario evidence review");
+    await candidate.getByRole("button", { name: "Add scenario", exact: true }).click();
+    await expect(candidate.getByRole("button", { name: "Link", exact: true })).toBeDisabled();
+    await candidate.getByRole("combobox", { name: "Choose a signal", exact: true }).selectOption(process.env.AVENLO_E2E_SIGNAL_ID!);
+    await candidate.getByRole("button", { name: "Link", exact: true }).click();
+    await expect(candidate.getByRole("status")).toContainText("signal linked");
+    await candidate.reload();
+    await expect(candidate.getByText("Every confirmed signal is already linked.")).toBeVisible();
     await candidate.goto(`/dashboard/jobs/${process.env.AVENLO_E2E_JOB_ID}`);
     await candidate.getByRole("button", { name: "Apply", exact: true }).click();
     await expect(candidate.getByRole("button", { name: "Applied", exact: true })).toBeDisabled();

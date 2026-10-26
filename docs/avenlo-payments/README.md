@@ -60,7 +60,7 @@ not a claim of free infrastructure or certified payment processing.
 5. Enter the payer transaction reference. Confirm it against the receiving
    bank's official records; screenshots/SMS/browser messages are insufficient.
 6. Founder enters official bank reference, 100 paise, exact receiving UPI ID,
-   bank credit time in UTC and a review note. Only then record reconciliation.
+   bank credit time in IST and a review note. Only then record reconciliation.
 7. A repeated reference must fail. An unconfirmed report must remain pending.
    Review and handle any refund through the bank; a request is not a refund.
 
@@ -87,3 +87,5 @@ the existing contact/advisory path. No public percentage-of-CTC fee is exposed.
 - [NPCI merchant onboarding and QR/intent guidance](https://www.npci.org.in/what-we-do/upi/faqs)
 - [NPCI bank-verified beneficiary-name display](https://www.npci.org.in/uploads/UPI_OC_No_101_A_FY_2025_26_Strengthening_beneficiary_name_verification_and_display_during_UPI_transactions_eb7bd7ed72.pdf)
 - [MIT-licensed QR dependency](https://github.com/soldair/node-qrcode)
+
+The checkout removes its QR and intent when the display countdown expires. A saved QR may still transfer money; report an existing payment instead of paying twice. Forms disable while saving; the refresh control reloads the authenticated ledger without claiming a bank confirmation. Bank-credit input is explicitly IST and is converted and calendar-validated server-side before reconciliation.

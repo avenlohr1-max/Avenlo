@@ -77,6 +77,31 @@ test.describe("disposable authenticated suite", () => {
     expect(serviceOrders.error).toBeNull();
     expect(serviceOrders.data).toHaveLength(0);
     await founder.screenshot({ path: "test-results/avenlo-payments-sandbox.png", fullPage: true });
+    // Disposable synthetic bank-credit fixture: validates form conversion, never a real payment.
+    const paymentAdmin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
+    const synthetic = await paymentAdmin.rpc("create_avenlo_upi_request", {
+      p_owner_id: process.env.AVENLO_E2E_FOUNDER_ID!, p_mode: "test", p_payee_upi: "fixture@bank", p_payee_name: "Disposable fixture",
+    });
+    expect(synthetic.error).toBeNull();
+    await founder.getByRole("button", { name: "Refresh payment status", exact: true }).click();
+    await founder.getByLabel("Transaction / UTR reference from your UPI app", { exact: true }).fill("SYNTHETIC-BROWSER-UTR");
+    await founder.getByRole("button", { name: "Report payment for review", exact: true }).click();
+    await expect(founder.getByRole("status")).toContainText("Report saved");
+    await expect(founder.getByText("Payment reported. Do not pay again.", { exact: true })).toBeVisible();
+    await expect(founder.getByLabel("Receiving UPI ID checked in bank records")).toHaveValue("fixture@bank");
+    await expect(founder.getByLabel("Amount credited in paise (₹1 = 100)")).toHaveValue("100");
+    const creditIst = new Date(Date.now() + 330 * 60 * 1000).toISOString().slice(0, 16);
+    await founder.getByLabel("Bank transaction reference", { exact: true }).fill("SYNTHETIC-BANK-IST");
+    await founder.getByLabel("Bank credit time (IST)", { exact: true }).fill(creditIst);
+    await founder.getByRole("checkbox").check();
+    await founder.getByLabel("Review note", { exact: true }).fill("Disposable synthetic reconciliation fixture. No bank or money involved.");
+    await founder.getByRole("button", { name: "Record bank reconciliation", exact: true }).click();
+    await expect(founder.getByRole("status")).toContainText("Review saved");
+    await expect(founder.getByRole("heading", { name: "₹1 test reconciled — no plan purchased", exact: true })).toBeVisible();
+    const reconciled = await paymentAdmin.from("avenlo_upi_requests").select("bank_received_at,status").eq("id", synthetic.data.id).single();
+    expect(reconciled.error).toBeNull();
+    expect(reconciled.data!.status).toBe("confirmed");
+    expect(Date.parse(reconciled.data!.bank_received_at)).toBe(Date.parse(`${creditIst}:00+05:30`));
     await founderContext.close();
     await candidate.goto(`/dashboard/jobs/${process.env.AVENLO_E2E_JOB_ID}`);
     await candidate.getByRole("button", { name: "Apply", exact: true }).click();

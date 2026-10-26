@@ -7,6 +7,7 @@ import { collaborationContext } from "@/lib/collaboration-server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { referenceSchema } from "@/lib/payments/upi";
 import { resolvePaymentSettings } from "@/lib/payments/settings";
+import { bankCreditTimeUtc } from "@/lib/payments/timing";
 
 const idSchema = z.guid();
 function finish(role: string, result: string): never {
@@ -39,8 +40,7 @@ export async function reviewPayment(form: FormData) {
   if (!parsed.success) finish(role, "invalid");
   const paise = form.get("amountPaise") ? Number(form.get("amountPaise")) : null;
   const received = form.get("receivedAt");
-  // datetime-local is explicitly entered in UTC, avoiding server/browser timezone ambiguity.
-  const receivedAt = typeof received === "string" && /^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(received) ? `${received}:00Z` : null;
+  const receivedAt = bankCreditTimeUtc(received);
   const { error } = await supabase.rpc("review_avenlo_upi_payment", {
     p_request_id: parsed.data.id, p_decision: parsed.data.decision, p_note: parsed.data.note,
     p_bank_reference: form.get("bankReference") || null, p_amount_paise: paise,

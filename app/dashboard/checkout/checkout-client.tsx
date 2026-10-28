@@ -33,6 +33,7 @@ export default function CheckoutClient({
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
   async function pay() {
     if (!accepted || busy) return;
@@ -72,18 +73,28 @@ export default function CheckoutClient({
         notes: { avenlo_order_id: orderResult.avenloOrderId },
         theme: { color: "#111827" },
         handler: async (response: Record<string, string>) => {
-          const verification = await fetch("/api/payments/razorpay/verify", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              orderId: orderResult.avenloOrderId,
-              ...response,
-              legalVersions,
-            }),
-          });
-          const result = await verification.json();
-          if (!verification.ok) throw new Error(result.error || "Payment verification failed.");
-          window.location.assign("/dashboard?payment=success");
+          setAwaitingConfirmation(true);
+          try {
+            for (let attempt = 0; attempt < 8; attempt++) {
+              const verification = await fetch("/api/payments/razorpay/verify", {
+                method: "POST", headers: { "content-type": "application/json" },
+                body: JSON.stringify({ orderId: orderResult.avenloOrderId, ...response, legalVersions }),
+              });
+              const result = await verification.json();
+              if (verification.status === 202 && result.pending) {
+                if (attempt < 7) await new Promise(resolve => setTimeout(resolve, 2000));
+                continue;
+              }
+              if (!verification.ok || !result.ok) throw new Error(result.error || "Payment confirmation is pending. Do not pay again.");
+              window.location.assign("/dashboard?payment=success");
+              return;
+            }
+            setError("Razorpay confirmation is taking longer. Do not pay again. Your workspace will reflect the verified payment when its notification arrives.");
+          } catch (error) {
+            setError(error instanceof Error ? error.message : "Unable to retrieve payment confirmation. Do not pay again.");
+          } finally {
+            setBusy(false);
+          }
         },
         modal: {
           ondismiss: () => setBusy(false),
@@ -120,9 +131,10 @@ export default function CheckoutClient({
         Avenlo records the accepted document versions with this purchase. Your six-month service does not
         automatically renew.
       </p>
-      <button type="button" onClick={pay} disabled={!accepted || busy}>
-        {busy ? "Opening secure payment…" : "Pay securely with Razorpay"}
+      <button type="button" onClick={pay} disabled={!accepted || busy || awaitingConfirmation}>
+        {awaitingConfirmation ? "Awaiting payment confirmation" : busy ? "Opening secure payment…" : "Pay securely with Razorpay"}
       </button>
+      {awaitingConfirmation ? <p role="status">Confirming directly with Razorpay. You do not need to enter a UTR.</p> : null}
       {error ? <p role="alert">{error}</p> : null}
     </>
   );

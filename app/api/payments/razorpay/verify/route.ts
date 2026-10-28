@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import Razorpay from "razorpay";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -19,7 +20,7 @@ function safeEqual(a: string, b: string) {
 }
 
 export async function POST(request: Request) {
-  if (!process.env.RAZORPAY_KEY_SECRET) {
+  if (process.env.AVENLO_PAYMENT_PROVIDER !== "razorpay" || !process.env.RAZORPAY_KEY_SECRET || !process.env.RAZORPAY_KEY_ID) {
     return NextResponse.json({ error: "Payment verification is not configured." }, { status: 503 });
   }
   try {
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
 
     const { data: order } = await db
       .from("candidate_service_orders")
-      .select("id,candidate_id,provider_order_id,status,payment_status")
+      .select("id,candidate_id,provider_order_id,status,payment_status,price,currency")
       .eq("id", body.orderId)
       .eq("candidate_id", user.id)
       .maybeSingle();
@@ -65,6 +66,17 @@ export async function POST(request: Request) {
 
     if (versions.some(([, version]) => !version)) {
       return NextResponse.json({ error: "Launch legal configuration is incomplete." }, { status: 503 });
+    }
+
+    // A valid checkout signature authenticates the response, not capture of funds.
+    const razorpay = new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET });
+    const payment = await razorpay.payments.fetch(body.razorpay_payment_id);
+    if (payment.id !== body.razorpay_payment_id || payment.order_id !== order.provider_order_id ||
+        Number(payment.amount) !== Math.round(Number(order.price) * 100) || payment.currency !== order.currency) {
+      return NextResponse.json({ error: "Payment does not match your Avenlo order." }, { status: 409 });
+    }
+    if (payment.status !== "captured" || payment.captured !== true) {
+      return NextResponse.json({ pending: true, error: "Razorpay confirmation is pending. Do not pay again." }, { status: 202 });
     }
 
     for (const [documentType, version] of versions) {

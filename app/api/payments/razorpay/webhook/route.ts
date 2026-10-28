@@ -13,6 +13,9 @@ function validSignature(payload: string, provided: string | null) {
 }
 
 export async function POST(request: Request) {
+  if (process.env.AVENLO_PAYMENT_PROVIDER !== "razorpay") {
+    return NextResponse.json({ error: "Payment provider is not enabled." }, { status: 503 });
+  }
   const payload = await request.text();
   if (!validSignature(payload, request.headers.get("x-razorpay-signature"))) {
     return NextResponse.json({ error: "Invalid webhook signature." }, { status: 400 });

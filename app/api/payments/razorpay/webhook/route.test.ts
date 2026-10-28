@@ -17,6 +17,7 @@ function request(amount = 19900, signature?: string) {
   } });
 }
 beforeEach(() => {
+  vi.stubEnv("AVENLO_PAYMENT_PROVIDER", "razorpay");
   vi.resetAllMocks(); vi.stubEnv("RAZORPAY_WEBHOOK_SECRET", "webhook-secret");
   mocks.existing.mockResolvedValue({ data: null });
   mocks.order.mockResolvedValue({ data: { id: "internal-order", price: 199, currency: "INR" } });
@@ -25,6 +26,11 @@ beforeEach(() => {
   mocks.rpc.mockResolvedValue({ data: { status: "payment_successful" }, error: null });
 });
 describe("trusted webhook settlement and retries", () => {
+  it("does not process events while the provider is disabled", async () => {
+    vi.stubEnv("AVENLO_PAYMENT_PROVIDER", "");
+    expect((await POST(request())).status).toBe(503);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
   it("rejects an invalid signature before database access", async () => {
     expect((await POST(request(19900, "invalid"))).status).toBe(400);
     expect(mocks.existing).not.toHaveBeenCalled();

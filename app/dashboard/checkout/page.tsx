@@ -26,7 +26,8 @@ export default async function CheckoutPage({
     Boolean(process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) &&
     Boolean(process.env.RAZORPAY_KEY_ID) &&
     Boolean(process.env.RAZORPAY_KEY_SECRET) &&
-    true;
+    Boolean(process.env.RAZORPAY_WEBHOOK_SECRET) &&
+    process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID === process.env.RAZORPAY_KEY_ID;
 
   const supabase = await createClient();
   const {
@@ -69,7 +70,8 @@ export default async function CheckoutPage({
         <span className={styles.eyebrow}>SECURE CHECKOUT</span>
         <h1>Review your Avenlo service.</h1>
         <p className={styles.lead}>
-          Your purchase activates a six-month paid service. It does not automatically renew at launch.
+          Pay for your six-month service through Razorpay. Avenlo confirms payment automatically;
+          service activation follows the delivery review. It does not automatically renew.
         </p>
 
         <section className={styles.layout}>

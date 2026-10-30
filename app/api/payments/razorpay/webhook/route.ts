@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import Razorpay from "razorpay";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -32,6 +33,7 @@ export async function POST(request: Request) {
     };
 
     const providerEventId = request.headers.get("x-razorpay-event-id") || event.id || null;
+    if (!providerEventId || providerEventId.length > 255) return NextResponse.json({ error: "Webhook event identifier is required." }, { status: 400 });
     const supabase = createAdminClient();
     const paymentEntity = event.payload?.payment?.entity;
     const providerOrderId = paymentEntity?.order_id || event.payload?.order?.entity?.id;
@@ -54,9 +56,15 @@ export async function POST(request: Request) {
         provider_event_id: providerEventId,
         event_type: event.event || "unknown",
         status: "received",
-        payload: event,
+        payload: { event: event.event, payment: paymentEntity ? {
+          id: paymentEntity.id, order_id: paymentEntity.order_id, status: paymentEntity.status,
+          amount: paymentEntity.amount, currency: paymentEntity.currency,
+        } : null },
       }).select("id").single();
-      if (eventError || !recorded) return NextResponse.json({ error: "Unable to record webhook event." }, { status: 500 });
+      if (eventError || !recorded) {
+        // A concurrent delivery may have inserted the same event; a retry reads it.
+        return NextResponse.json({ error: "Unable to record webhook event. Retry required." }, { status: 503 });
+      }
       eventId = recorded.id;
     }
 
@@ -64,6 +72,13 @@ export async function POST(request: Request) {
       if (!serviceOrder?.id || !paymentEntity?.id || paymentEntity.status !== "captured" ||
         paymentEntity.amount !== Math.round(Number(serviceOrder.price) * 100) || paymentEntity.currency !== serviceOrder.currency) {
         return NextResponse.json({ error: "Captured payment does not match an Avenlo order." }, { status: 409 });
+      }
+      if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) return NextResponse.json({ error: "Capture verification is unavailable." }, { status: 503 });
+      const razorpay = new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET });
+      const payment = await razorpay.payments.fetch(paymentEntity.id);
+      if (payment.id !== paymentEntity.id || payment.order_id !== providerOrderId || payment.status !== "captured" || payment.captured !== true ||
+        Number(payment.amount) !== Math.round(Number(serviceOrder.price) * 100) || payment.currency !== serviceOrder.currency) {
+        return NextResponse.json({ error: "Razorpay has not confirmed a matching captured payment." }, { status: 409 });
       }
       const { error: settlementError } = await supabase.rpc("settle_candidate_service_order", {
         p_order_id: serviceOrder.id,

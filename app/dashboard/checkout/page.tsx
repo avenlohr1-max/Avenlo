@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CheckoutClient from "./checkout-client";
 import styles from "./checkout.module.css";
+import { checkoutOffer, checkoutPoliciesApproved, checkoutPolicyVersion } from "@/lib/payments/checkout";
 
 export const dynamic = "force-dynamic";
 
@@ -14,13 +15,8 @@ export default async function CheckoutPage({
   const params = await searchParams;
   const market = params.market === "international" ? "international" : "india";
   const planCode = params.plan ?? "intelligence";
-  const versions = {
-    candidate: process.env.AVENLO_CANDIDATE_TERMS_VERSION,
-    privacy: process.env.AVENLO_PRIVACY_VERSION,
-    paid: process.env.AVENLO_PAID_SERVICE_TERMS_VERSION,
-    refund: process.env.AVENLO_REFUND_POLICY_VERSION,
-  };
-  const legalConfigured = Object.values(versions).every(Boolean);
+  const legalConfigured = checkoutPoliciesApproved();
+  const offer = checkoutOffer(market, planCode);
   const paymentConfigured =
     process.env.AVENLO_PAYMENT_PROVIDER?.toLowerCase() === "razorpay" &&
     Boolean(process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) &&
@@ -37,10 +33,11 @@ export default async function CheckoutPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role,status")
     .eq("id", user.id)
     .maybeSingle();
-  if (profile?.role !== "candidate") redirect("/dashboard");
+  if (profile?.role !== "candidate" || !["draft", "active"].includes(profile.status)) redirect("/dashboard");
+  if (!user.email_confirmed_at) redirect("/verify-email");
 
   const { data: plan } = await supabase
     .from("candidate_plans")
@@ -87,9 +84,10 @@ export default async function CheckoutPage({
               </small>
             </div>
             <div className={styles.rule} />
+            {offer ? <><h2>What you are purchasing</h2><ul>{offer.items.map(item => <li key={item}>{item}</li>)}</ul><p>Six months from service activation, no automatic renewal. Payment confirmation and service activation are separate. No hiring or salary outcome is guaranteed.</p></> : null}
             <h2>Before payment</h2>
 
-            {!marketReady ? (
+            {!offer || market === "international" && process.env.AVENLO_INTERNATIONAL_PAYMENTS_ENABLED !== "true" ? <div className={styles.warning}><strong>Confirm your service with Avenlo</strong><span>This offer is not available for online payment yet. Contact support@avenlo.in.</span></div> : !marketReady ? (
               <div className={styles.warning}>
                 <strong>Verification required</strong>
                 <span>
@@ -98,18 +96,16 @@ export default async function CheckoutPage({
               </div>
             ) : !legalConfigured ? (
               <div className={styles.warning}>
-                <strong>Legal configuration required</strong>
+                <strong>Online payment is not open yet</strong>
                 <span>
-                  Effective versions for the four launch documents have not been configured yet.
-                  This is a launch P0 and must be supplied after counsel approval.
+                  Online payment is not open yet. Contact support@avenlo.in for availability.
                 </span>
               </div>
             ) : !paymentConfigured ? (
               <div className={styles.warning}>
-                <strong>Razorpay configuration required</strong>
+                <strong>Secure checkout is temporarily unavailable</strong>
                 <span>
-                  Razorpay credentials and webhook signing configuration must be present before
-                  candidate payments can go live.
+                  Please contact support@avenlo.in before making a payment.
                 </span>
               </div>
             ) : (
@@ -119,18 +115,13 @@ export default async function CheckoutPage({
                 keyId={process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!}
                 planName={plan.name}
                 candidateEmail={user.email}
-                legalVersions={{
-                  candidate: versions.candidate!,
-                  privacy: versions.privacy!,
-                  paid: versions.paid!,
-                  refund: versions.refund!,
-                }}
+                policyVersion={checkoutPolicyVersion}
               />
             )}
 
             <p className={styles.small}>
               Avenlo records the accepted legal document versions with the service order.
-              Refund treatment follows the approved Refund Policy; no refund period is assumed here.
+              Please read the linked refund and cancellation terms before purchase.
             </p>
           </article>
 
@@ -158,7 +149,7 @@ export default async function CheckoutPage({
                 <dd>Razorpay</dd>
               </div>
             </dl>
-            <p>Taxes, invoicing entity and approved refund treatment follow Finance/Legal configuration.</p>
+            <p>Invoiced by Avenlo, Hyderabad. No GST is charged while Avenlo is unregistered. The amount shown is the amount payable. Refund eligibility is set out in the linked policy.</p>
           </aside>
         </section>
       </div>

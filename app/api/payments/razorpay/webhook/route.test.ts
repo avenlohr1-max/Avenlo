@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ existing: vi.fn(), order: vi.fn(), insert: vi.fn(), update: vi.fn(), rpc: vi.fn() }));
+const mocks = vi.hoisted(() => ({ existing: vi.fn(), order: vi.fn(), insert: vi.fn(), update: vi.fn(), rpc: vi.fn(), fetchPayment: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({
   from: (table: string) => table === "payment_events" ? {
     select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: mocks.existing }) }) }),
@@ -9,6 +9,7 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({
   } : { select: () => ({ eq: () => ({ maybeSingle: mocks.order }) }) },
   rpc: mocks.rpc,
 }) }));
+vi.mock("razorpay", () => ({ default: class { payments = { fetch: mocks.fetchPayment }; } }));
 import { POST } from "./route";
 function request(amount = 19900, signature?: string) {
   const body = JSON.stringify({ event: "payment.captured", payload: { payment: { entity: { id: "payment", order_id: "order", status: "captured", amount, currency: "INR" } } } });
@@ -18,7 +19,11 @@ function request(amount = 19900, signature?: string) {
 }
 beforeEach(() => {
   vi.stubEnv("AVENLO_PAYMENT_PROVIDER", "razorpay");
-  vi.resetAllMocks(); vi.stubEnv("RAZORPAY_WEBHOOK_SECRET", "webhook-secret");
+  vi.resetAllMocks();
+  vi.stubEnv("RAZORPAY_KEY_ID", "rzp_test_fixture");
+  vi.stubEnv("RAZORPAY_KEY_SECRET", "test-secret");
+  mocks.fetchPayment.mockResolvedValue({ id: "payment", order_id: "order", status: "captured", captured: true, amount: 19900, currency: "INR" });
+  vi.stubEnv("RAZORPAY_WEBHOOK_SECRET", "webhook-secret");
   mocks.existing.mockResolvedValue({ data: null });
   mocks.order.mockResolvedValue({ data: { id: "internal-order", price: 199, currency: "INR" } });
   mocks.insert.mockResolvedValue({ data: { id: "event-row" }, error: null });
@@ -63,5 +68,26 @@ describe("trusted webhook settlement and retries", () => {
   it("does not acknowledge an event when its processing record cannot be saved", async () => {
     mocks.update.mockResolvedValue({ error: { message: "temporary failure" } });
     expect((await POST(request())).status).toBe(500);
+  });
+});
+
+
+describe("webhook authoritative capture", () => {
+  it.each([{ amount: 1 }, { currency: "USD" }, { order_id: "another" }, { captured: false }, { status: "authorized" }])("rejects inconsistent provider result %o", async patch => {
+    mocks.fetchPayment.mockResolvedValue({ id: "payment", order_id: "order", status: "captured", captured: true, amount: 19900, currency: "INR", ...patch });
+    expect((await POST(request())).status).toBe(409);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+  it("does not acknowledge an outage as a successful capture", async () => {
+    mocks.fetchPayment.mockRejectedValue(new Error("provider unavailable"));
+    expect((await POST(request())).status).toBe(500);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+  it("stores only the normalized payment identifiers and amount", async () => {
+    await POST(request());
+    expect(mocks.insert).toHaveBeenCalledWith(expect.objectContaining({ payload: {
+      event: "payment.captured", payment: { id: "payment", order_id: "order", status: "captured", amount: 19900, currency: "INR" },
+    } }));
   });
 });

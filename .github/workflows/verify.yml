@@ -131,6 +131,11 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/avenlo_upi_payments.sql
 
+      - name: Verify invoice settlement, replay and financial access boundaries
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/billing_invoices.sql
+
       - name: Practice synthetic backup and restore
         env:
           PGPASSWORD: postgres
@@ -203,7 +208,10 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: avenlo-payment-test-proof
-          path: test-results/avenlo-payments-sandbox.png
+          path: |
+            test-results/avenlo-payments-sandbox.png
+            test-results/avenlo-invoice-synthetic.png
+            test-results/avenlo-invoice-synthetic.pdf
           if-no-files-found: ignore
       - name: Stop disposable containers
         if: always()

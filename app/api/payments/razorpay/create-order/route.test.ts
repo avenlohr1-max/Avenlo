@@ -55,8 +55,8 @@ describe("pre-payment checkout controls", () => {
     expect((await POST(request())).status).toBe(401);
     expect(mocks.provider).not.toHaveBeenCalled();
   });
-  it("blocks a suspended profile", async () => {
-    mocks.query.mockImplementation((t,o) => t === "profiles" ? { data: { role: "candidate", status: "suspended" } } : defaultQuery(t,o));
+  it("blocks a archived profile", async () => {
+    mocks.query.mockImplementation((t,o) => t === "profiles" ? { data: { role: "candidate", status: "archived" } } : defaultQuery(t,o));
     expect((await POST(request())).status).toBe(403);
     expect(mocks.provider).not.toHaveBeenCalled();
   });

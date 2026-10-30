@@ -56,11 +56,11 @@ do $$ begin
   if (select count(*) from public.avenlo_invoices)<>1 then raise exception 'Founder cannot review invoice'; end if;
 end $$;
 reset role;
-update public.profiles set status='suspended' where id='10000000-0000-0000-0000-000000000001';
+update public.profiles set status='archived' where id='10000000-0000-0000-0000-000000000001';
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',true);
 set local role authenticated;
 do $$ begin
-  if exists(select 1 from public.avenlo_invoices) then raise exception 'Suspended account read invoice'; end if;
+  if exists(select 1 from public.avenlo_invoices) then raise exception 'Archived account read invoice'; end if;
 end $$;
 reset role;
 set local role anon;

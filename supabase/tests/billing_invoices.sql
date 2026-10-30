@@ -5,6 +5,7 @@ begin
   begin execute statement; exception when others then return; end;
   raise exception 'Expected blocked operation: %',statement;
 end $$;
+grant execute on function pg_temp.expect_blocked(text) to anon,authenticated,service_role;
 insert into public.candidate_service_orders(id,candidate_id,plan_id,market,price,currency,payment_provider,provider_order_id,checkout_snapshot)
 select 'ab000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001',id,'india',1999,'INR','razorpay','order_synthetic_invoice',
 '{"issuer":{"name":"Synthetic Avenlo","address":"123 Synthetic Street","email":"billing@example.test","gstRegistered":false},"billing":{"name":"Synthetic Candidate","address":"123 Example Street","city":"Hyderabad","state":"Telangana","postalCode":"500008","country":"India","email":"candidate@example.test"},"plan":"Synthetic Intelligence","items":["Synthetic profile review"],"termMonths":6,"amountPaise":199900,"currency":"INR","accepted":true,"policyVersion":"synthetic-test","acceptedAt":"2026-10-29T00:00:00Z","documents":[{},{},{},{}]}'::jsonb

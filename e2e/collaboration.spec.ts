@@ -48,7 +48,7 @@ test.describe("disposable authenticated suite", () => {
     await expect(otherPage.getByText("SYNTHETIC TEST — not a customer",{exact:true})).toHaveCount(0);
     const owner=await browser.newContext({baseURL:"http://127.0.0.1:3000"});
     const ownerPage=await owner.newPage(); await login(ownerPage,"founder");
-    await ownerPage.goto(`/dashboard/billing/${order.data!.id}`);
+    await ownerPage.goto(`/admin/billing/${order.data!.id}`);
     await expect(ownerPage.getByRole("heading",{name:"Invoice",exact:true})).toBeVisible();
     await Promise.all([context.close(),other.close(),owner.close()]);
   });

@@ -38,7 +38,7 @@ export default async function Invoice({ params }: { params: Promise<{ orderId: s
       <table className={s.lines}><thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody><tr><td><strong>{data.plan}</strong><ul>{data.items.map(item => <li key={item}>{item}</li>)}</ul></td><td>1</td><td>{total}</td><td><strong>{total}</strong></td></tr></tbody></table>
       <section className={s.totals}><div><h2>Amount in words</h2><p>{invoiceAmountWords(invoice.amount_paise,invoice.currency)}</p><h2>Payment status</h2><p className={s.paid}>Paid via Razorpay</p></div><dl><div><dt>Service value</dt><dd>{total}</dd></div><div><dt>Discount</dt><dd>{invoiceMoney(0,invoice.currency)}</dd></div><div className={s.grand}><dt>Invoice total</dt><dd>{total}</dd></div><div><dt>Balance due</dt><dd>{invoiceMoney(0,invoice.currency)}</dd></div></dl></section>
       <section className={s.band}><div><b>Payment reference</b><span>{invoice.provider_payment_id}</span></div><div><b>Purchase terms</b><span>Accepted {paymentTime(data.acceptedAt)}<br />Version {data.policyVersion}</span></div></section>
-      <footer className={s.footer}><span>avenlo.in · {data.issuer.email}</span><span>Electronic invoice · 1 / 1</span></footer>
+      <footer className={s.footer}><span>avenlo.in · {data.issuer.email}</span><span>Electronic invoice</span></footer>
     </article>
   </main>;
 }

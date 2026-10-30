@@ -17,11 +17,11 @@ for (let attempt = 0; attempt < 20; attempt++) {
 }
 const password = `${randomUUID()}Aa!9`;
 const env = { AVENLO_E2E_PASSWORD: password };
-for (const role of ["candidate", "company", "staff", "founder"]) {
+for (const role of ["candidate", "company", "staff", "founder", "billing"]) {
   const email = `avenlo-e2e-${role}@example.test`;
   const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { full_name: `Synthetic ${role}`, account_type: role === "company" ? "company" : "candidate" } });
   if (error || !data.user) throw error ?? new Error("Missing synthetic user");
-  const update = await admin.from("profiles").update({ role, status: "active" }).eq("id", data.user.id);
+  const update = await admin.from("profiles").update({ role: role === "billing" ? "candidate" : role, status: "active" }).eq("id", data.user.id);
   if (update.error) throw update.error;
   env[`AVENLO_E2E_${role.toUpperCase()}_ID`] = data.user.id;
 }

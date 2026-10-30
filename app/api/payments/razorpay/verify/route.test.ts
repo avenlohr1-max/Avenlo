@@ -23,7 +23,7 @@ beforeEach(() => {
   vi.stubEnv("RAZORPAY_KEY_ID", "rzp_test_fixture");
   vi.stubEnv("RAZORPAY_KEY_SECRET", "test-secret");
   mocks.fetchPayment.mockResolvedValue({ id: "provider-payment", order_id: "provider-order", amount: 19900, currency: "INR", status: "captured", captured: true });
-  for (const key of ["AVENLO_CANDIDATE_TERMS_VERSION", "AVENLO_PRIVACY_VERSION", "AVENLO_PAID_SERVICE_TERMS_VERSION", "AVENLO_REFUND_POLICY_VERSION"]) vi.stubEnv(key, "reviewed-test-version");
+  for (const key of ["AVENLO_CANDIDATE_TERMS_VERSION", "AVENLO_PRIVACY_VERSION", "AVENLO_PAID_SERVICE_TERMS_VERSION", "AVENLO_REFUND_POLICY_VERSION"]) vi.stubEnv(key, "2026-10-29");
   mocks.getUser.mockResolvedValue({ data: { user: { id: "candidate" } } });
   mocks.order.mockResolvedValue({ data: { id: "internal-order", candidate_id: "candidate", provider_order_id: "provider-order", price: 199, currency: "INR" } });
   mocks.legal.mockResolvedValue({ error: null });
@@ -84,3 +84,4 @@ describe("authoritative Razorpay capture check", () => {
     expect(mocks.adminRpc).not.toHaveBeenCalled();
   });
 });
+

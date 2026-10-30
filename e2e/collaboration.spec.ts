@@ -5,7 +5,7 @@ import { execFileSync } from "node:child_process";
 test.describe("disposable authenticated suite", () => {
   test.skip(process.env.AVENLO_LOCAL_INTEGRATION !== "true", "Requires disposable local Auth/Storage containers; never Production or shared Preview");
   test.describe.configure({ retries: 0 });
-  async function login(page: Page, role: "candidate" | "company" | "staff" | "founder") {
+  async function login(page: Page, role: "candidate" | "company" | "staff" | "founder" | "billing") {
     const internal = role === "staff" || role === "founder";
     await page.goto(internal ? "/admin/login" : "/login");
     await page.getByLabel("Email", { exact: true }).fill(`avenlo-e2e-${role}@example.test`);
@@ -13,6 +13,45 @@ test.describe("disposable authenticated suite", () => {
     await page.getByRole("button", { name: internal ? "Enter operations" : "Sign in", exact: true }).click({ timeout: 30_000 });
     await page.waitForURL(internal ? "**/staff" : role === "company" ? "**/company" : "**/dashboard", { timeout: 30_000 });
   }
+  test("synthetic captured settlement produces a private printable invoice once", async ({ browser }) => {
+    const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    expect(["127.0.0.1","localhost"]).toContain(new URL(url).hostname);
+    const admin=createClient(url,process.env.SUPABASE_SERVICE_ROLE_KEY!,{ auth:{persistSession:false,autoRefreshToken:false} });
+    const { data: plan,error:planError }=await admin.from("candidate_plans").select("id").eq("market","india").eq("code","intelligence").single();
+    expect(planError).toBeNull();
+    const snapshot={ issuer:{name:"Avenlo",address:"9-4-136/d/3 Anurag Colony, Tolichowki, Hyderabad 500008",email:"support@avenlo.in",gstRegistered:false},
+      billing:{name:"SYNTHETIC TEST — not a customer",address:"123 Example Street",city:"Hyderabad",state:"Telangana",postalCode:"500008",country:"India",email:"synthetic@example.test"},
+      plan:"SYNTHETIC TEST — Intelligence",items:["Professional profile review","Skills and experience analysis","Strengths, gaps and career positioning","Human review and intelligence reporting"],
+      termMonths:6,amountPaise:199900,currency:"INR",accepted:true,policyVersion:"synthetic-test",acceptedAt:new Date().toISOString(),documents:[{},{},{},{}] };
+    const order=await admin.from("candidate_service_orders").insert({candidate_id:process.env.AVENLO_E2E_BILLING_ID,plan_id:plan!.id,market:"india",price:1999,currency:"INR",payment_provider:"razorpay",provider_order_id:"order_synthetic_browser",checkout_snapshot:snapshot}).select("id").single();
+    expect(order.error).toBeNull();
+    const args={p_order_id:order.data!.id,p_provider:"razorpay",p_provider_payment_id:"pay_synthetic_browser"};
+    expect((await admin.rpc("settle_candidate_service_order",args)).error).toBeNull();
+    expect((await admin.rpc("settle_candidate_service_order",args)).error).toBeNull();
+    const invoices=await admin.from("avenlo_invoices").select("invoice_number").eq("service_order_id",order.data!.id);
+    expect(invoices.error).toBeNull(); expect(invoices.data).toHaveLength(1);
+    const context=await browser.newContext({baseURL:"http://127.0.0.1:3000"});
+    const page=await context.newPage(); await login(page,"billing");
+    await page.goto(`/dashboard/billing/${order.data!.id}`);
+    await expect(page.getByRole("heading",{name:"Invoice",exact:true})).toBeVisible();
+    await expect(page.getByText(invoices.data![0].invoice_number,{exact:true})).toBeVisible();
+    await expect(page.getByText("Paid via Razorpay",{exact:true})).toBeVisible();
+    await expect(page.getByRole("button",{name:"Print / save PDF"})).toBeVisible();
+    await page.screenshot({path:"test-results/avenlo-invoice-synthetic.png",fullPage:true});
+    await page.pdf({path:"test-results/avenlo-invoice-synthetic.pdf",format:"A4",printBackground:true,preferCSSPageSize:true});
+    await page.setViewportSize({width:390,height:844});
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+    const other=await browser.newContext({baseURL:"http://127.0.0.1:3000"});
+    const otherPage=await other.newPage(); await login(otherPage,"candidate");
+    await otherPage.goto(`/dashboard/billing/${order.data!.id}`);
+    await expect(otherPage.getByRole("heading",{name:"Invoice",exact:true})).toHaveCount(0);
+    await expect(otherPage.getByText("SYNTHETIC TEST — not a customer",{exact:true})).toHaveCount(0);
+    const owner=await browser.newContext({baseURL:"http://127.0.0.1:3000"});
+    const ownerPage=await owner.newPage(); await login(ownerPage,"founder");
+    await ownerPage.goto(`/dashboard/billing/${order.data!.id}`);
+    await expect(ownerPage.getByRole("heading",{name:"Invoice",exact:true})).toBeVisible();
+    await Promise.all([context.close(),other.close(),owner.close()]);
+  });
   test("candidate preview, employer conversation, dossier export, service consent and complete erasure", async ({ browser }) => {
     test.setTimeout(180_000);
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;

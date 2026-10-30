@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { checkoutDocuments } from "@/lib/payments/checkout";
 
 declare global {
   interface Window {
@@ -14,12 +15,7 @@ type Props = {
   keyId: string;
   planName: string;
   candidateEmail?: string | null;
-  legalVersions: {
-    candidate: string;
-    privacy: string;
-    paid: string;
-    refund: string;
-  };
+  policyVersion: string;
 };
 
 export default function CheckoutClient({
@@ -28,8 +24,9 @@ export default function CheckoutClient({
   planCode,
   planName,
   candidateEmail,
-  legalVersions,
+  policyVersion,
 }: Props) {
+  const [billing, setBilling] = useState({ name: "", address: "", city: "", state: "", postalCode: "", country: market === "india" ? "India" : "" });
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -44,7 +41,7 @@ export default function CheckoutClient({
       const orderResponse = await fetch("/api/payments/razorpay/create-order", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ market, plan: planCode }),
+      body: JSON.stringify({ market, plan: planCode, accepted, policyVersion, billing }),
     });
     const orderResult = await orderResponse.json();
     if (!orderResponse.ok) throw new Error(orderResult.error || "Unable to create payment order.");
@@ -78,7 +75,7 @@ export default function CheckoutClient({
             for (let attempt = 0; attempt < 8; attempt++) {
               const verification = await fetch("/api/payments/razorpay/verify", {
                 method: "POST", headers: { "content-type": "application/json" },
-                body: JSON.stringify({ orderId: orderResult.avenloOrderId, ...response, legalVersions }),
+                body: JSON.stringify({ orderId: orderResult.avenloOrderId, ...response }),
               });
               const result = await verification.json();
               if (verification.status === 202 && result.pending) {
@@ -86,10 +83,10 @@ export default function CheckoutClient({
                 continue;
               }
               if (!verification.ok || !result.ok) throw new Error(result.error || "Payment confirmation is pending. Do not pay again.");
-              window.location.assign("/dashboard?payment=success");
+              window.location.assign(`/dashboard/billing/${orderResult.avenloOrderId}`);
               return;
             }
-            setError("Razorpay confirmation is taking longer. Do not pay again. Your workspace will reflect the verified payment when its notification arrives.");
+            window.location.assign(`/dashboard/billing/${orderResult.avenloOrderId}`);
           } catch (error) {
             setError(error instanceof Error ? error.message : "Unable to retrieve payment confirmation. Do not pay again.");
           } finally {
@@ -117,7 +114,10 @@ export default function CheckoutClient({
   }
 
   return (
-    <>
+    <form onSubmit={event => { event.preventDefault(); void pay(); }}>
+      <h2>Billing details</h2>
+      <p>These details appear on your invoice and are saved with this purchase.</p>
+      {([ ["name", "Billing name"], ["address", "Billing address"], ["city", "City"], ["state", "State / region"], ["postalCode", "Postal code"], ["country", "Country"] ] as const).map(([key,label]) => <label key={key} style={{ display: "grid", gap: 6, marginBottom: 14 }}>{label}<input name={key} value={billing[key]} required minLength={key === "address" ? 8 : key === "postalCode" ? 3 : 2} maxLength={key === "address" ? 500 : 120} onChange={event => setBilling(previous => ({ ...previous, [key]: event.target.value }))} style={{ padding: 12, border: "1px solid #c5d0dc", borderRadius: 8, width: "100%", font: "inherit" }} /></label>)}
       <label>
         <input
           type="checkbox"
@@ -125,17 +125,18 @@ export default function CheckoutClient({
           onChange={(event) => setAccepted(event.target.checked)}
           disabled={busy}
         />{" "}
-        I accept the current Candidate Terms, Privacy Notice, Paid Service Terms and Refund Policy shown by Avenlo.
+        I accept the purchase terms linked below, version {policyVersion}, including the service scope and refund policy.
       </label>
+      <ul>{checkoutDocuments.map(document => <li key={document.type}><a href={document.path} target="_blank" rel="noreferrer">{document.title}</a></li>)}</ul>
       <p>
         Avenlo records the accepted document versions with this purchase. Your six-month service does not
         automatically renew.
       </p>
-      <button type="button" onClick={pay} disabled={!accepted || busy || awaitingConfirmation}>
+      <button type="submit" disabled={!accepted || busy || awaitingConfirmation}>
         {awaitingConfirmation ? "Awaiting payment confirmation" : busy ? "Opening secure payment…" : "Pay securely with Razorpay"}
       </button>
       {awaitingConfirmation ? <p role="status">Confirming directly with Razorpay. You do not need to enter a UTR.</p> : null}
       {error ? <p role="alert">{error}</p> : null}
-    </>
+    </form>
   );
 }

@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import Razorpay from "razorpay";
+import { checkoutPoliciesApproved } from "@/lib/payments/checkout";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -29,7 +30,6 @@ export async function POST(request: Request) {
       razorpay_order_id?: string;
       razorpay_payment_id?: string;
       razorpay_signature?: string;
-      legalVersions?: { candidate?: string; privacy?: string; paid?: string; refund?: string };
     };
 
     if (!body.orderId || !body.razorpay_order_id || !body.razorpay_payment_id || !body.razorpay_signature) {
@@ -57,16 +57,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Payment signature verification failed." }, { status: 400 });
     }
 
-    const versions = [
-      ["candidate_terms", process.env.AVENLO_CANDIDATE_TERMS_VERSION],
-      ["privacy_notice", process.env.AVENLO_PRIVACY_VERSION],
-      ["paid_service_terms", process.env.AVENLO_PAID_SERVICE_TERMS_VERSION],
-      ["refund_policy", process.env.AVENLO_REFUND_POLICY_VERSION],
-    ] as const;
-
-    if (versions.some(([, version]) => !version)) {
-      return NextResponse.json({ error: "Launch legal configuration is incomplete." }, { status: 503 });
-    }
+    if (!checkoutPoliciesApproved()) return NextResponse.json({ error: "Paid checkout is awaiting policy approval." }, { status: 503 });
 
     // A valid checkout signature authenticates the response, not capture of funds.
     const razorpay = new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET });
@@ -77,17 +68,6 @@ export async function POST(request: Request) {
     }
     if (payment.status !== "captured" || payment.captured !== true) {
       return NextResponse.json({ pending: true, error: "Razorpay confirmation is pending. Do not pay again." }, { status: 202 });
-    }
-
-    for (const [documentType, version] of versions) {
-      const { error } = await db.from("candidate_legal_acceptances").insert({
-        candidate_id: user.id,
-        document_type: documentType,
-        version,
-        source: "razorpay_checkout",
-        metadata: { service_order_id: order.id, provider: "razorpay" },
-      });
-      if (error) return NextResponse.json({ error: "Unable to record legal acceptance." }, { status: 500 });
     }
 
     const { data: activated, error: activationError } = await db.rpc(
@@ -103,7 +83,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Payment was verified but service activation needs review." }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, status: activated.status });
+    return NextResponse.json({ ok: true, status: activated.status, invoiceUrl: `/dashboard/billing/${order.id}` });
   } catch {
     return NextResponse.json({ error: "Unable to verify payment." }, { status: 500 });
   }

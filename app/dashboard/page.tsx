@@ -44,7 +44,7 @@ export default async function Dashboard() {
             <Link href="/dashboard/recommendations">Opportunities</Link>
             <Link href="/dashboard/applications">My applications</Link>
             <Link href="/dashboard/rooms">Decision rooms</Link>
-            <Link href="/dashboard/payments">Payment history</Link>
+            <Link href="/dashboard/billing">Billing and invoices</Link>
             <SignOutButton />
           </nav>
         </div>

@@ -1,6 +1,5 @@
 import crypto from "node:crypto";
 import Razorpay from "razorpay";
-import { checkoutPoliciesApproved } from "@/lib/payments/checkout";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -56,8 +55,6 @@ export async function POST(request: Request) {
     if (!safeEqual(expected, body.razorpay_signature)) {
       return NextResponse.json({ error: "Payment signature verification failed." }, { status: 400 });
     }
-
-    if (!checkoutPoliciesApproved()) return NextResponse.json({ error: "Paid checkout is awaiting policy approval." }, { status: 503 });
 
     // A valid checkout signature authenticates the response, not capture of funds.
     const razorpay = new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET });

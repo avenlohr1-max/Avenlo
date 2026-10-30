@@ -44,10 +44,12 @@ describe("verified server settlement", () => {
     expect((await POST(request("invalid"))).status).toBe(400);
     expect(mocks.adminRpc).not.toHaveBeenCalled();
   });
-  it("keeps settlement blocked without configured legal versions", async () => {
+  it("can settle an already accepted purchase even when new checkout is held", async () => {
     vi.stubEnv("AVENLO_PRIVACY_VERSION", "");
-    expect((await POST(request())).status).toBe(503);
-    expect(mocks.adminRpc).not.toHaveBeenCalled();
+    const response=await POST(request());
+    expect(response.status).toBe(200);
+    expect((await response.json()).invoiceUrl).toBe("/dashboard/billing/internal-order");
+    expect(mocks.legal).not.toHaveBeenCalled();
   });
   it("uses only the trusted client after ownership, signature and legal checks", async () => {
     expect((await POST(request())).status).toBe(200);

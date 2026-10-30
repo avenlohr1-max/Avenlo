@@ -43,7 +43,10 @@ for each row execute function private.avenlo_invoice_immutable();
 create function private.guard_avenlo_order_financials() returns trigger
 language plpgsql set search_path='' as $$
 begin
-  if current_user in ('postgres','service_role','supabase_admin') then return new; end if;
+  if current_user in ('postgres','service_role','supabase_admin') then
+    if tg_op='DELETE' then return old; else return new; end if;
+  end if;
+  if tg_op='DELETE' then raise exception 'Financial orders require a retention review' using errcode='42501'; end if;
   if tg_op='INSERT' then raise exception 'Orders are created by trusted checkout only' using errcode='42501'; end if;
   if row(new.candidate_id,new.plan_id,new.market,new.price,new.currency,new.payment_status,new.payment_provider,
     new.provider_order_id,new.provider_payment_id,new.purchased_at,new.checkout_snapshot)
@@ -55,7 +58,7 @@ begin
   return new;
 end $$;
 revoke all on function private.guard_avenlo_order_financials() from public,anon,authenticated;
-create trigger guard_avenlo_order_financials before insert or update on public.candidate_service_orders
+create trigger guard_avenlo_order_financials before insert or update or delete on public.candidate_service_orders
 for each row execute function private.guard_avenlo_order_financials();
 
 create or replace function public.settle_candidate_service_order(p_order_id uuid,p_provider text,p_provider_payment_id text)

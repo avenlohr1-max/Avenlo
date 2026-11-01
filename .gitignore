@@ -11,3 +11,10 @@ supabase/.temp
 .DS_Store
 npm-debug.log*
 *.tsbuildinfo
+/dist/
+.vinext/
+.cloudflare/
+.dev.vars*
+.wrangler/
+/test-results/
+/playwright-report/

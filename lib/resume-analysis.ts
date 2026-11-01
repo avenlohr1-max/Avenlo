@@ -40,6 +40,11 @@ export function analyzeResume(args: { text: string; fileName: string; fileType: 
 export async function extractResumeText(file: File, fileType: "pdf" | "docx" | "doc") {
   const buffer = await file.arrayBuffer(); if (fileType === "doc") return { text: "", pageCount: null as number | null };
   if (fileType === "docx") { const mammoth = await import("mammoth"); const result = await mammoth.extractRawText({ buffer: Buffer.from(buffer) }); return { text: result.value, pageCount: null as number | null }; }
+  // PDF.js otherwise imports workerSrc relative to its bundled server chunk.
+  // Preload its supported same-thread handler so Workers and Node use the
+  // packaged module rather than an unresolvable runtime filesystem path.
+  const workerScope = globalThis as typeof globalThis & { pdfjsWorker?: { WorkerMessageHandler: unknown } };
+  workerScope.pdfjsWorker ??= await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs"); const document = await pdfjs.getDocument({ data: new Uint8Array(buffer), useSystemFonts: true }).promise; const pages: string[] = [];
   for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) { const page = await document.getPage(pageNumber); const content = await page.getTextContent(); pages.push(content.items.map((item) => ("str" in item ? item.str + (item.hasEOL ? "\n" : " ") : "")).join("")); }
   return { text: pages.join("\n"), pageCount: document.numPages };

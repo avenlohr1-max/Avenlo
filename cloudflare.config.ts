@@ -20,6 +20,7 @@ export default defineConfig({
     },
     env: {
       ASSETS: bindings.assets(),
+      AVENLO_PREVIEW_HOST: bindings.text("avenlo-compatibility.avenlohr1.workers.dev"),
       ...(localIntegration ? {
         NEXT_PUBLIC_SUPABASE_URL: bindings.text(process.env.NEXT_PUBLIC_SUPABASE_URL!),
         NEXT_PUBLIC_SUPABASE_ANON_KEY: bindings.text(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!),

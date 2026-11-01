@@ -174,7 +174,10 @@ jobs:
           mv supabase/migrations "$RUNNER_TEMP/avenlo-migrations"
           npx --yes supabase@2.121.0 init
           mkdir -p supabase/migrations
-          npx --yes supabase@2.121.0 start -x studio,imgproxy,realtime,postgres-meta,edge-runtime,logflare,vector,supavisor > "$RUNNER_TEMP/local-stack.log" 2>&1
+          if ! npx --yes supabase@2.121.0 start -x studio,imgproxy,realtime,postgres-meta,edge-runtime,logflare,vector,supavisor > "$RUNNER_TEMP/local-stack.log" 2>&1; then
+            sed -E 's/(sb_secret_|sb_publishable_)[A-Za-z0-9_-]+/[REDACTED]/g; s/eyJ[A-Za-z0-9_.-]+/[REDACTED]/g' "$RUNNER_TEMP/local-stack.log" | tail -n 100
+            exit 1
+          fi
           mv "$RUNNER_TEMP/avenlo-migrations/"*.sql supabase/migrations/
           npx --yes supabase@2.121.0 status -o env > "$RUNNER_TEMP/supabase.env"
           set -a
@@ -219,7 +222,7 @@ jobs:
         run: npx --yes supabase@2.121.0 stop --no-backup
       - name: Show synthetic browser failure context
         if: failure()
-        run: find test-results -name error-context.md -exec cat {} \;
+        run: if [ -d test-results ]; then find test-results -name error-context.md -exec cat {} \; ; fi
 
   cloudflare-integration:
     runs-on: ubuntu-latest
@@ -249,7 +252,10 @@ jobs:
           mv supabase/migrations "$RUNNER_TEMP/avenlo-migrations"
           npx --yes supabase@2.121.0 init
           mkdir -p supabase/migrations
-          npx --yes supabase@2.121.0 start -x studio,imgproxy,realtime,postgres-meta,edge-runtime,logflare,vector,supavisor > "$RUNNER_TEMP/local-stack.log" 2>&1
+          if ! npx --yes supabase@2.121.0 start -x studio,imgproxy,realtime,postgres-meta,edge-runtime,logflare,vector,supavisor > "$RUNNER_TEMP/local-stack.log" 2>&1; then
+            sed -E 's/(sb_secret_|sb_publishable_)[A-Za-z0-9_-]+/[REDACTED]/g; s/eyJ[A-Za-z0-9_.-]+/[REDACTED]/g' "$RUNNER_TEMP/local-stack.log" | tail -n 100
+            exit 1
+          fi
           mv "$RUNNER_TEMP/avenlo-migrations/"*.sql supabase/migrations/
           npx --yes supabase@2.121.0 status -o env > "$RUNNER_TEMP/supabase.env"
           set -a
@@ -296,4 +302,4 @@ jobs:
         run: npx --yes supabase@2.121.0 stop --no-backup
       - name: Show synthetic browser failure context
         if: failure()
-        run: find test-results -name error-context.md -exec cat {} \;
+        run: if [ -d test-results ]; then find test-results -name error-context.md -exec cat {} \; ; fi

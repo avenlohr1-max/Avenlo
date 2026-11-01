@@ -3,7 +3,7 @@ from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 from xml.sax.saxutils import escape
 
-destination = Path("test-results/resume-fixtures")
+destination = Path("e2e/.generated-resumes")
 destination.mkdir(parents=True, exist_ok=True)
 lines = ["Synthetic Candidate", "synthetic@example.test", "Summary",
          "Reporting analyst with SQL and Python experience.", "Experience",

@@ -3,6 +3,8 @@ const reserved: Record<string,Portal> = {companies:"companies",staff:"staff",adm
 export function portalForHost(host: string): {portal:Portal;slug?:string} {
   const name = host.toLowerCase().replace(/:\d+$/, "");
   if (name === "avenlo.in" || name === "www.avenlo.in") return {portal:"candidate"};
+  const previewHost = process.env.AVENLO_PREVIEW_HOST?.toLowerCase();
+  if (previewHost && /^[a-z0-9-]+\.[a-z0-9-]+\.workers\.dev$/.test(previewHost) && name === previewHost) return {portal:"development"};
   if (name === "localhost" || name === "127.0.0.1" || name.endsWith(".vercel.app") || name.endsWith(".netlify.app")) return {portal:"development"};
   if (!name.endsWith(".avenlo.in")) return {portal:"unknown"};
   const slug = name.slice(0,-".avenlo.in".length);

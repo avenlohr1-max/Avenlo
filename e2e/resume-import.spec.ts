@@ -18,7 +18,7 @@ test("actual PDF and DOCX imports extract text and persist candidate analysis", 
       multipart: { file: {
         name: `synthetic.${extension}`,
         mimeType: extension === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        buffer: readFileSync(`test-results/resume-fixtures/synthetic.${extension}`),
+        buffer: readFileSync(`e2e/.generated-resumes/synthetic.${extension}`),
       } },
     });
     expect(response.status()).toBe(200);

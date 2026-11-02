@@ -1,12 +1,18 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { companyTenant, portalForHost } from "@/lib/portal-routing";
+import { trialRequestPolicy, trialUserAllowed } from "@/lib/hosted-trial";
 
 const within = (path:string,prefix:string) => path===prefix || path.startsWith(prefix+"/");
 const noStore = (response:NextResponse) => {response.headers.set("Cache-Control","private, no-store");return response;};
 export async function proxy(request: NextRequest) {
   const {portal,slug} = portalForHost(request.nextUrl.hostname);
   const path = request.nextUrl.pathname;
+  const hostedTrial = process.env.AVENLO_HOSTED_TRIAL === "true";
+  const trialPolicy = trialRequestPolicy(path, request.method);
+  if (hostedTrial && (request.nextUrl.hostname !== process.env.AVENLO_PREVIEW_HOST || trialPolicy === "blocked")) {
+    return noStore(new NextResponse("Private compatibility trial. Registration and email actions are unavailable here.", {status:403}));
+  }
   if (portal==="unknown") return new NextResponse("Workspace not found.",{status:404});
   const tenantId = portal==="tenant" ? companyTenant(slug!) : null;
   if (portal==="tenant" && !tenantId) return new NextResponse("Workspace unavailable. Contact your Avenlo representative.",{status:404,headers:{"Cache-Control":"private, no-store"}});
@@ -59,7 +65,7 @@ export async function proxy(request: NextRequest) {
   const protectedRoute=["/dashboard","/company","/staff","/admin"].some(p=>within(effectivePath,p)) && effectivePath!=="/admin/login";
   const destination=request.nextUrl.clone();destination.pathname=effectivePath;
   let response=effectivePath===path ? NextResponse.next({request}) : NextResponse.rewrite(destination);
-  if (!protectedRoute) return response;
+  if (!protectedRoute && !(hostedTrial && trialPolicy === "authenticated")) return response;
 
   const url=process.env.NEXT_PUBLIC_SUPABASE_URL, key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return noStore(new NextResponse("Workspace configuration unavailable.",{status:503}));
@@ -78,6 +84,7 @@ export async function proxy(request: NextRequest) {
     return noStore(redirect);
   }
   if (!user) return redirectTo(operations || within(effectivePath,"/staff") || within(effectivePath,"/admin") ? "/admin/login" : "/login");
+  if (hostedTrial && !trialUserAllowed(user.id, process.env.AVENLO_HOSTED_TRIAL_USER_IDS)) return noStore(new NextResponse("This account is not part of the private compatibility trial.", {status:403}));
   const {data:profile}=await supabase.from("profiles").select("status, role").eq("id",user.id).maybeSingle();
   if (!profile || profile.status==="suspended") return redirectTo("/account-suspended");
   if (!["staff","founder"].includes(profile.role) && !user.email_confirmed_at) return redirectTo("/verify-email");

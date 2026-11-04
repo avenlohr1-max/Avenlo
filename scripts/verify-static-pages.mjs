@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import console from "node:console";
 
 const report = JSON.parse(readFileSync("dist/server/vinext-prerender.json", "utf8"));
 const errors = report.routes.filter(route => route.status === "error");

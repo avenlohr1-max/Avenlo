@@ -16,11 +16,12 @@ test("actual PDF and DOCX imports extract text and persist candidate analysis", 
   // Replacing the same format and switching formats both exercise storage
   // upserts and profile-import idempotency, beyond a first successful import.
   for (const extension of ["pdf", "docx", "docx", "pdf"]) {
+    const fixture = readFileSync(`e2e/.generated-resumes/synthetic.${extension}`);
     const response = await page.request.post("/api/candidate/resume", {
       multipart: { file: {
         name: `synthetic.${extension}`,
         mimeType: extension === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        buffer: readFileSync(`e2e/.generated-resumes/synthetic.${extension}`),
+        buffer: fixture,
       } },
     });
     expect(response.status()).toBe(200);
@@ -36,6 +37,6 @@ test("actual PDF and DOCX imports extract text and persist candidate analysis", 
     expect(stored.data!.preferences.resume_analysis.wordCount).toBe(body.analysis.wordCount);
     const savedFile = await admin.storage.from("candidate-documents").download(stored.data!.resume_path);
     expect(savedFile.error).toBeNull();
-    expect(new Uint8Array(await savedFile.data!.arrayBuffer())).toEqual(new Uint8Array(readFileSync(`test-results/resume-fixtures/synthetic.${extension}`)));
+    expect(new Uint8Array(await savedFile.data!.arrayBuffer())).toEqual(new Uint8Array(fixture));
   }
 });

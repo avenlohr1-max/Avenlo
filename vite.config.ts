@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import vinext from "vinext";
 import { cloudflare } from "@cloudflare/vite-plugin";
+import { staticAssetsAdapter } from "@vinext/cloudflare/cache/static-assets-adapter";
 import { createHash } from "node:crypto";
 import { patchCssModules } from "vite-css-modules";
 import path from "node:path";
@@ -8,7 +9,10 @@ import path from "node:path";
 export default defineConfig({
   plugins: [
     patchCssModules({ exportMode: "default" }),
-    vinext(),
+    vinext({
+      prerender: { routes: "*", concurrency: 2 },
+      cache: { cdn: staticAssetsAdapter() },
+    }),
     cloudflare({
       viteEnvironment: {
         name: "rsc",

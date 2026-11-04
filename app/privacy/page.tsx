@@ -2,6 +2,7 @@ import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
 
 export const metadata = { title: "Privacy Policy — Avenlo" };
+export const dynamic = "force-static";
 
 export default function PrivacyPage() {
   return <main><SiteHeader /><section className="section section--light"><div className="container company-principle">

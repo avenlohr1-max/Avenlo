@@ -13,7 +13,9 @@ test("actual PDF and DOCX imports extract text and persist candidate analysis", 
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL("**/dashboard");
   const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
-  for (const extension of ["pdf", "docx"]) {
+  // Replacing the same format and switching formats both exercise storage
+  // upserts and profile-import idempotency, beyond a first successful import.
+  for (const extension of ["pdf", "docx", "docx", "pdf"]) {
     const response = await page.request.post("/api/candidate/resume", {
       multipart: { file: {
         name: `synthetic.${extension}`,

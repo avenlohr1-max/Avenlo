@@ -3,6 +3,7 @@ import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
 import s from "../experience.module.css";
 export const metadata = { title: "Candidate plans — Avenlo" };
+export const dynamic = "force-static";
 type Plan = {name:string;price:string;description:string;features:string[];featured?:boolean};
 const india: Plan[] = [
   {name:"Basic",price:"Free",description:"Begin with your professional record.",features:["Profile and resume workspace","Review and correct recorded skills","Relevant opportunities when available"]},

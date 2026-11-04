@@ -34,5 +34,8 @@ test("actual PDF and DOCX imports extract text and persist candidate analysis", 
     expect(stored.error).toBeNull();
     expect(stored.data!.resume_path.endsWith(`resume.${extension}`)).toBe(true);
     expect(stored.data!.preferences.resume_analysis.wordCount).toBe(body.analysis.wordCount);
+    const savedFile = await admin.storage.from("candidate-documents").download(stored.data!.resume_path);
+    expect(savedFile.error).toBeNull();
+    expect(new Uint8Array(await savedFile.data!.arrayBuffer())).toEqual(new Uint8Array(readFileSync(`test-results/resume-fixtures/synthetic.${extension}`)));
   }
 });

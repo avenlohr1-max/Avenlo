@@ -37,9 +37,14 @@ export function analyzeResume(args: { text: string; fileName: string; fileType: 
   if (!contact.email) improvements.push("Add a professional email address near the top."); if (!contact.phone) improvements.push("Add a reachable phone number if appropriate for your applications."); if (!sections.find((section) => section.key === "experience")?.present) improvements.push("Add a clearly labelled experience section with recent roles and outcomes."); if (!sections.find((section) => section.key === "skills")?.present) improvements.push("Add a dedicated skills section so your core capabilities are easy to match."); if (quantifiedBullets < 2) improvements.push("Turn more responsibilities into measurable outcomes using numbers, percentages or scale."); if (wordCount < 180) improvements.push("The resume looks brief; add enough context to show scope and impact without adding filler."); if (detectedSkills.length < 4) improvements.push("Make your most relevant skills explicit and use the same terminology as your target roles.");
   return { version: 1, analyzedAt: new Date().toISOString(), fileName: args.fileName, fileType: args.fileType, wordCount, pageCount: args.pageCount ?? null, score: Math.max(0, Math.min(100, Math.round(score))), contact, sections, candidateSkills, detectedSkills, quantifiedBullets, actionBullets, bulletCount: bullets.length, summary: findSummary(text), strengths: strengths.slice(0, 4), improvements: improvements.slice(0, 6), parserNote: args.fileType === "doc" ? "Legacy .doc files are stored but their text is not parsed yet. Save as .docx or PDF for full analysis." : undefined };
 }
-export async function extractResumeText(file: File, fileType: "pdf" | "docx" | "doc") {
-  const buffer = await file.arrayBuffer(); if (fileType === "doc") return { text: "", pageCount: null as number | null };
+export async function extractResumeText(file: File, fileType: "pdf" | "docx" | "doc", bytes?: ArrayBuffer) {
+  const buffer = bytes ?? await file.arrayBuffer(); if (fileType === "doc") return { text: "", pageCount: null as number | null };
   if (fileType === "docx") { const mammoth = await import("mammoth"); const result = await mammoth.extractRawText({ buffer: Buffer.from(buffer) }); return { text: result.value, pageCount: null as number | null }; }
+  // PDF.js otherwise imports workerSrc relative to its bundled server chunk.
+  // Preload its supported same-thread handler so Workers and Node use the
+  // packaged module rather than an unresolvable runtime filesystem path.
+  const workerScope = globalThis as typeof globalThis & { pdfjsWorker?: { WorkerMessageHandler: unknown } };
+  workerScope.pdfjsWorker ??= await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs"); const document = await pdfjs.getDocument({ data: new Uint8Array(buffer), useSystemFonts: true }).promise; const pages: string[] = [];
   for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) { const page = await document.getPage(pageNumber); const content = await page.getTextContent(); pages.push(content.items.map((item) => ("str" in item ? item.str + (item.hasEOL ? "\n" : " ") : "")).join("")); }
   return { text: pages.join("\n"), pageCount: document.numPages };

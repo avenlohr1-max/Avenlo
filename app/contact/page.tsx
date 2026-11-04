@@ -1,6 +1,7 @@
 import { MarketingShell } from "@/app/components/marketing-shell";
 
 export const metadata = { title: "Contact Avenlo \u2014 Signal & Match" };
+export const dynamic = "force-static";
 
 export default function Page() {
   return <MarketingShell><main id="top"><section className="contact-hero section-wrap"><p className="eyebrow"><span className="eyebrow-dot"></span> GET IN TOUCH</p><h1>Every good match starts with a <em>conversation.</em></h1><p className="hero-lede">Choose the path that fits you. Avenlo’s employer onboarding is invitation-only.</p></section>

@@ -84,9 +84,7 @@ jobs:
         run: npm run test:e2e
 
       - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update && sudo apt-get install -y postgresql-client-16
-          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
       - name: Prepare RLS regression database
         env:
@@ -141,16 +139,17 @@ jobs:
       - name: Practice synthetic backup and restore
         env:
           PGPASSWORD: postgres
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         shell: bash
         run: |
           # Match the dump/restore tools to the PG16 test server. A newer dump
           # can emit settings such as transaction_timeout that PG16 rejects.
-          pg_dump --version | grep -q ' 16\.'
-          pg_restore --version | grep -q ' 16\.'
-          pg_dump -h localhost -U postgres -d avenlo_test --no-owner -Fc -f "$RUNNER_TEMP/avenlo-synthetic.dump"
-          createdb -h localhost -U postgres avenlo_restore
-          pg_restore -h localhost -U postgres -d avenlo_restore --no-owner --exit-on-error "$RUNNER_TEMP/avenlo-synthetic.dump"
-          psql -h localhost -U postgres -d avenlo_restore -v ON_ERROR_STOP=1 -f supabase/tests/restore_assertions.sql
+          docker exec "$POSTGRES_CONTAINER" pg_dump --version | grep -q ' 16\.'
+          docker exec "$POSTGRES_CONTAINER" pg_restore --version | grep -q ' 16\.'
+          docker exec -e PGPASSWORD=postgres "$POSTGRES_CONTAINER" pg_dump -U postgres -d avenlo_test --no-owner -Fc -f /tmp/avenlo-synthetic.dump
+          docker exec -e PGPASSWORD=postgres "$POSTGRES_CONTAINER" createdb -U postgres avenlo_restore
+          docker exec -e PGPASSWORD=postgres "$POSTGRES_CONTAINER" pg_restore -U postgres -d avenlo_restore --no-owner --exit-on-error /tmp/avenlo-synthetic.dump
+          docker exec -i -e PGPASSWORD=postgres "$POSTGRES_CONTAINER" psql -U postgres -d avenlo_restore -v ON_ERROR_STOP=1 < supabase/tests/restore_assertions.sql
           original=$(psql -h localhost -U postgres -d avenlo_test -Atc "select count(*) from public.profiles; select count(*) from storage.objects; select count(*) from pg_policies;")
           restored=$(psql -h localhost -U postgres -d avenlo_restore -Atc "select count(*) from public.profiles; select count(*) from storage.objects; select count(*) from pg_policies;")
           test "$original" = "$restored"

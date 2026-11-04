@@ -84,7 +84,9 @@ jobs:
         run: npm run test:e2e
 
       - name: Install PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client-16
+          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
 
       - name: Prepare RLS regression database
         env:
@@ -141,6 +143,10 @@ jobs:
           PGPASSWORD: postgres
         shell: bash
         run: |
+          # Match the dump/restore tools to the PG16 test server. A newer dump
+          # can emit settings such as transaction_timeout that PG16 rejects.
+          pg_dump --version | grep -q ' 16\.'
+          pg_restore --version | grep -q ' 16\.'
           pg_dump -h localhost -U postgres -d avenlo_test --no-owner -Fc -f "$RUNNER_TEMP/avenlo-synthetic.dump"
           createdb -h localhost -U postgres avenlo_restore
           pg_restore -h localhost -U postgres -d avenlo_restore --no-owner --exit-on-error "$RUNNER_TEMP/avenlo-synthetic.dump"

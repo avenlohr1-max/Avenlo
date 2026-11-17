@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import console from 'node:console';
+import process from 'node:process';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { spawnSync } from 'node:child_process';
+import { evaluateAudit } from './audit-policy.mjs';
+
+const sha = text => createHash('sha256').update(text.replaceAll('\r\n', '\n')).digest('hex');
+const require = createRequire(import.meta.url);
+const fromVite = createRequire(require.resolve('vite/package.json'));
+assert.equal(sha(readFileSync('patches/picomatch@4.0.7.patch', 'utf8')), 'd0cea9cc3db5f0688bd7cd9cdc4285e865c22febee2b751f5b23165425144ea6');
+assert.equal(sha(readFileSync(fromVite.resolve('picomatch/lib/parse'), 'utf8')), '63d5390bb13f98bd3f0eb76f9c67e6d5ce7a9b920e7aeace3d3ae23b63eb2e02');
+const lock = readFileSync('pnpm-lock.yaml', 'utf8');
+const versions = [...lock.matchAll(/^ {2}picomatch@([^:\n]+):/gm)].map(match => match[1]);
+assert.ok(versions.length > 0 && versions.every(version => version === '4.0.7' || version.startsWith('4.0.7(patch_hash=')));
+assert.ok(lock.includes('picomatch@4.0.7: d0cea9cc3db5f0688bd7cd9cdc4285e865c22febee2b751f5b23165425144ea6'));
+const regression = spawnSync(process.execPath, ['scripts/verify-picomatch-patch.mjs'], { encoding: 'utf8', timeout: 30000, windowsHide: true });
+assert.equal(regression.status, 0, regression.stderr || regression.error?.message);
+process.stdout.write(regression.stdout);
+assert.ok(process.env.npm_execpath, 'Run via pnpm audit:release so the pinned package manager is available.');
+const audit = spawnSync(process.execPath, [process.env.npm_execpath, 'audit', '--json'], { encoding: 'utf8', timeout: 120000, maxBuffer: 10 * 1024 * 1024, windowsHide: true });
+assert.ok(!audit.error && [0, 1].includes(audit.status), audit.error?.message || audit.stderr || 'Registry audit failed.');
+const report = JSON.parse(audit.stdout);
+const result = evaluateAudit(report, true);
+console.log(JSON.stringify({ registryVulnerabilities: report.metadata.vulnerabilities, locallyPatchedAdvisories: result.mitigated, unmitigatedAdvisories: result.blocked }, null, 2));
+if (result.blocked.length) process.exitCode = 1;

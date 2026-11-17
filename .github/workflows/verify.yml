@@ -44,14 +44,20 @@ jobs:
           package-manager-cache: false
           registry-url: https://registry.npmjs.org
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: pnpm install --frozen-lockfile
 
       - name: Verify canonical migration provenance
         run: node scripts/verify-migration-map.mjs
 
       - name: Dependency audit
-        run: npm audit --audit-level=high
+        run: |
+          node --test scripts/audit-release.test.mjs
+          pnpm audit:release
 
       - name: Secret pattern scan
         shell: bash
@@ -174,8 +180,11 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: pnpm install --frozen-lockfile
       - name: Start disposable Supabase Auth, API and Storage
         shell: bash
         run: |

@@ -111,6 +111,11 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/account_erasure.sql
 
+      - name: Verify bounded Storage lookups, consent withdrawal and replacement
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/storage_policy_planning.sql
+
       - name: Verify opportunity curation, private decisions and confirmed evidence
         env:
           PGPASSWORD: postgres

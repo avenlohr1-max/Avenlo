@@ -4,6 +4,7 @@ import { SiteFooter } from "@/app/components/site-footer";
 import { productCatalog } from "@/lib/product-catalog";
 import s from "../experience.module.css";
 export const metadata = { title: "Ten connected products for your career — Avenlo" };
+export const dynamic = "force-static";
 const instructions = [
   "Add experience, education and preferences. Review your information and choose your sharing settings.",
   "Add a statement, record its source and context, then confirm or correct it.",

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { productCatalog } from "@/lib/product-catalog";
 
 export const metadata = { title: "Avenlo \u2014 Signal & Match" };
+export const dynamic = "force-static";
 
 export default function Page() {
   return <MarketingShell><main id="top">

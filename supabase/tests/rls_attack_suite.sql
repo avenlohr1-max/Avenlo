@@ -239,6 +239,19 @@ BEGIN
       AND status = 'reviewing' AND match_score IS NULL
   ) THEN RAISE EXCEPTION 'company review update changed protected matching fields or failed'; END IF;
 
+  -- A private applicant stays private while the employer reviews its own
+  -- application. This used to fail in the candidate-role validation trigger.
+  UPDATE public.applications SET status = 'reviewing', match_score = 99
+    WHERE id = '70000000-0000-0000-0000-000000000003';
+  IF NOT EXISTS (
+    SELECT 1 FROM public.applications
+    WHERE id = '70000000-0000-0000-0000-000000000003'
+      AND status = 'reviewing' AND match_score IS NULL
+  ) THEN RAISE EXCEPTION 'private applicant status could not be updated safely'; END IF;
+  IF EXISTS (SELECT 1 FROM public.profiles WHERE id = '10000000-0000-0000-0000-000000000003')
+    OR EXISTS (SELECT 1 FROM public.candidate_profiles WHERE user_id = '10000000-0000-0000-0000-000000000003')
+  THEN RAISE EXCEPTION 'reviewing a private application exposed its profile'; END IF;
+
   SELECT count(*) INTO n FROM public.companies WHERE id = '50000000-0000-0000-0000-000000000002';
   IF n <> 0 THEN RAISE EXCEPTION 'company read another company record'; END IF;
 END

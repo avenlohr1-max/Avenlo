@@ -22,7 +22,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run start",
+    command: process.env.AVENLO_E2E_RUNTIME === "cloudflare"
+      ? "node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 3000"
+      : "npm run start",
     url: "http://127.0.0.1:3000",
     reuseExistingServer: false,
     timeout: 120_000,

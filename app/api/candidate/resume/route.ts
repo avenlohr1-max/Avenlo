@@ -55,18 +55,24 @@ export async function POST(request: Request) {
       }
     }
 
+    // Materialize the bounded file once. Sending bytes avoids a second multipart
+    // encoding and lets extraction reuse the same data after Storage consumes it.
+    const bytes = await file.arrayBuffer();
     const path = `${user.id}/resume.${extension}`;
-    const upload = await supabase.storage.from("candidate-documents").upload(path, file, {
+    const uploadStarted = performance.now();
+    const upload = await supabase.storage.from("candidate-documents").upload(path, new Uint8Array(bytes), {
       upsert: true,
       contentType: file.type,
       cacheControl: "3600",
     });
+    const uploadDuration = performance.now() - uploadStarted;
     if (upload.error) throw new Error(`Resume upload failed: ${upload.error.message}`);
 
     let analysis;
     let extractedProfile;
+    const parseStarted = performance.now();
     try {
-      const extracted = await extractResumeText(file, fileType);
+      const extracted = await extractResumeText(file, fileType, bytes);
       analysis = analyzeResume({
         text: extracted.text,
         fileName: file.name,
@@ -98,6 +104,7 @@ export async function POST(request: Request) {
       };
       extractedProfile = extractCandidateProfile("", [], null);
     }
+    const parseDuration = performance.now() - parseStarted;
 
     const preferences = candidate?.preferences && typeof candidate.preferences === "object" ? candidate.preferences : {};
     const resumeImport = { ...extractedProfile, importedAt: new Date().toISOString() };
@@ -149,7 +156,9 @@ export async function POST(request: Request) {
       if (educationError) throw new Error(`Resume was uploaded but education could not be imported: ${educationError.message}`);
     }
 
-    return NextResponse.json({ ok: true, path, analysis, extractedProfile: resumeImport });
+    return NextResponse.json({ ok: true, path, analysis, extractedProfile: resumeImport }, {
+      headers: { "Server-Timing": `resume_storage;dur=${uploadDuration.toFixed(1)}, resume_parse;dur=${parseDuration.toFixed(1)}` },
+    });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to upload your resume." }, { status: 500 });
   }

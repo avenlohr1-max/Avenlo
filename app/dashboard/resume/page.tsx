@@ -49,7 +49,7 @@ export default function ResumeCheckerPage() {
     { label: "Resume file", ok: Boolean(state.resumePath), detail: state.resumePath ? "A current CV is stored securely." : "Upload a PDF, DOC or DOCX to start." },
     { label: "Professional headline", ok: Boolean(state.headline.trim()), detail: state.headline ? "Your direction is visible at a glance." : "Add a clear role-focused headline." },
     { label: "Skills evidence", ok: state.skills.length >= 3 || Boolean(state.analysis?.detectedSkills.length), detail: state.skills.length >= 3 ? `${state.skills.length} skills are available for matching.` : state.analysis?.detectedSkills.length ? `${state.analysis.detectedSkills.length} skills were detected in your resume.` : "Add at least 3 core skills." },
-    { label: "Experience context", ok: state.workCount > 0 || state.experience !== null || Boolean(state.analysis?.sections.find((section) => section.key === "experience")?.present), detail: state.workCount ? `${state.workCount} role${state.workCount === 1 ? "" : "s"} listed.` : state.experience !== null ? `${state.experience} years of experience recorded.` : "Add your current or past experience." },
+    { label: "Experience context", ok: state.workCount > 0 || state.experience !== null || Boolean(state.analysis?.sections.find((section) => section.key === "experience")?.present), detail: state.workCount ? `${state.workCount} role${state.workCount === 1 ? "" : "s"} listed.` : state.experience !== null ? `${state.experience} years of experience recorded.` : state.analysis?.sections.some((section) => section.key === "experience" && section.present) ? "Experience was detected in your resume." : "Add your current or past experience." },
     { label: "Education context", ok: state.educationCount > 0 || Boolean(state.analysis?.sections.find((section) => section.key === "education")?.present), detail: state.educationCount ? `${state.educationCount} education record${state.educationCount === 1 ? "" : "s"} listed.` : "Add your education history." },
     { label: "Career context", ok: Boolean(state.industry), detail: state.industry ? `${state.industry} is recorded as your industry.` : "Add an industry so role alignment is clearer." },
   ], [state]);
@@ -81,7 +81,7 @@ export default function ResumeCheckerPage() {
         <section className={styles.card}>
           <h2>Resume readiness</h2>
           <div className={styles.score} style={{ ["--score" as string]: `${score * 3.6}deg` }}><strong>{score}</strong><span>READINESS</span></div>
-          {state.analysis ? <p className={styles.scoreCaption}>Based on {state.analysis.wordCount.toLocaleString()} words{state.analysis.pageCount ? ` across ${state.analysis.pageCount} pages` : ""} in your uploaded document.</p> : <p className={styles.scoreCaption}>Complete an upload to generate a document-based score.</p>}
+          {state.analysis ? <p className={styles.scoreCaption}>Based on {state.analysis.wordCount.toLocaleString()} words{state.analysis.pageCount ? ` across ${state.analysis.pageCount} page${state.analysis.pageCount === 1 ? "" : "s"}` : ""} in your uploaded document.</p> : <p className={styles.scoreCaption}>Complete an upload to generate a document-based score.</p>}
           <div className={styles.metricList}>{checks.map((check) => <div className={styles.metric} key={check.label}><span>{check.label}</span><strong className={!check.ok ? styles.warn : ""}>{check.ok ? "Ready" : "Needs work"}</strong></div>)}</div>
         </section>
 

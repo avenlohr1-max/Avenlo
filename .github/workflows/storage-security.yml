@@ -1,0 +1,41 @@
+name: Storage security
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths: ["supabase/**", ".github/workflows/storage-security.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  storage-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: avenlo_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U postgres -d avenlo_test"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Replay migrations and verify Storage access boundaries
+        shell: bash
+        run: |
+          psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f supabase/tests/rls_harness_setup.sql
+          for migration in supabase/migrations/*.sql; do
+            psql -h localhost -U postgres -d avenlo_test --single-transaction -v ON_ERROR_STOP=1 -f "$migration"
+          done
+          for suite in rls_attack_suite function_access_controls account_erasure storage_policy_planning; do
+            echo "Checking $suite"
+            psql -h localhost -U postgres -d avenlo_test -v ON_ERROR_STOP=1 -f "supabase/tests/$suite.sql"
+          done

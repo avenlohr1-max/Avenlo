@@ -2,6 +2,7 @@ import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
 
 export const metadata = { title: "Terms & Conditions — Avenlo" };
+export const dynamic = "force-static";
 
 export default function TermsPage() {
   return <main><SiteHeader /><section className="section section--light"><div className="container company-principle">

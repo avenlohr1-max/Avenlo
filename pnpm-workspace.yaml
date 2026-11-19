@@ -1,0 +1,11 @@
+allowBuilds:
+  workerd: true
+minimumReleaseAgeExclude:
+  - minimatch@11.0.9
+overrides:
+  follow-redirects: 1.16.3
+  fflate: 0.8.3
+  minimatch: 11.0.9
+  picomatch: 4.0.7
+patchedDependencies:
+  picomatch@4.0.7: patches/picomatch@4.0.7.patch
